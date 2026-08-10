@@ -1,0 +1,94 @@
+/**
+ * TechOS Design Tokens
+ * Single source of truth for color, radius, shadow, and spacing.
+ * Consumed via CSS variables and mapped in tailwind.config.ts.
+ */
+
+:root {
+  /* ——— Brand ——— */
+  --brand: #6a9cfd;
+  --brand-soft: #8bb4fe;
+  --brand-deep: #5486e8;
+  --brand-mist: #e8f0fc;
+  --brand-wash: #f3f6fb;
+  --brand-rgb: 106 156 253;
+
+  /* ——— Surfaces ——— */
+  --bg: #f3f6fb;
+  --bg-elevated: #ffffff;
+  --bg-muted: #f0f2f5;
+  --bg-subtle: #e8f0fc;
+  --bg-inverse: #1e293b;
+
+  --surface: #ffffff;
+  --surface-hover: #f7f9fc;
+  --surface-active: #e8f0fc;
+
+  /* ——— Borders ——— */
+  --border: #e5eaf2;
+  --border-strong: #d0d8e6;
+  --border-focus: #6a9cfd;
+
+  /* ——— Text ——— */
+  --text: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+  --text-link: #5486e8;
+
+  /* ——— Status ——— */
+  --success: #16a34a;
+  --success-soft: #dcfce7;
+  --success-text: #166534;
+  --warning: #d97706;
+  --warning-soft: #fef3c7;
+  --warning-text: #92400e;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --danger-text: #991b1b;
+  --info: #6a9cfd;
+  --info-soft: #e8f0fc;
+  --info-text: #1d4ed8;
+
+  /* ——— Sidebar / chrome ——— */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e5eaf2;
+  --sidebar-text: #4b5563;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active: #6a9cfd;
+  --sidebar-hover: #f0f2f5;
+  --topbar-bg: #ffffff;
+  --topbar-border: #e5eaf2;
+
+  /* ——— Radius ——— */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+  --radius-full: 9999px;
+
+  /* ——— Shadows ——— */
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-md: 0 4px 16px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 12px 32px rgb(91 141 239 / 0.12), 0 4px 12px rgb(15 23 42 / 0.04);
+  --shadow-auth: 0 25px 50px -12px rgb(91 141 239 / 0.18), 0 12px 24px -8px rgb(15 23 42 / 0.08);
+
+  /* ——— Spacing scale (8px grid) ——— */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ——— Motion ——— */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+
+  color-scheme: light;
+}

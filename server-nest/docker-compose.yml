@@ -1,0 +1,127 @@
+# TechOS local infrastructure
+# Start deps:  docker compose up -d
+# With tools:  docker compose --profile tools up -d
+# Full stack:  docker compose --profile app up -d --build
+
+name: techos
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: techos-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-techos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techos}
+      POSTGRES_DB: ${POSTGRES_DB:-techos}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-techos} -d ${POSTGRES_DB:-techos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: techos-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Local SMTP catcher — UI at http://localhost:8025
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: techos-mailhog
+    restart: unless-stopped
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+
+  # Optional Redis GUI — http://localhost:8081
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: techos-redis-commander
+    profiles: ["tools"]
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "${REDIS_COMMANDER_PORT:-8081}:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Optional S3-compatible object storage — console http://localhost:9001
+  minio:
+    image: minio/minio:latest
+    container_name: techos-minio
+    profiles: ["storage"]
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-techos}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-techossecret}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: run the Nest API inside Docker (profile: app)
+  app:
+    profiles: ["app"]
+    build: .
+    container_name: techos-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 4000
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-techos}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-techos}
+      DATABASE_NAME: ${POSTGRES_DB:-techos}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_SECURE: "false"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
