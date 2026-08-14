@@ -36,6 +36,9 @@ import { WorkspaceRecord } from './workspace-record.entity';
 import { ActivityEvent } from './activity-event.entity';
 import { RecordComment } from './record-comment.entity';
 import { CodeReview } from './code-review.entity';
+import { AiConversation } from './ai-conversation.entity';
+import { AiMessage } from './ai-message.entity';
+import { AiUsage } from './ai-usage.entity';
 
 export const entities = [
   Organization,
@@ -75,6 +78,9 @@ export const entities = [
   ActivityEvent,
   RecordComment,
   CodeReview,
+  AiConversation,
+  AiMessage,
+  AiUsage,
 ];
 
 // Export individual entities
@@ -116,4 +122,7 @@ export {
   ActivityEvent,
   RecordComment,
   CodeReview,
+  AiConversation,
+  AiMessage,
+  AiUsage,
 };

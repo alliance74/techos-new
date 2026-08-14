@@ -18,29 +18,56 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.client = new Redis({
-      host: this.configService.get<string>('REDIS_HOST', 'localhost'),
-      port: Number(this.configService.get<string>('REDIS_PORT') || 6379),
-      password: this.configService.get<string>('REDIS_PASSWORD') || undefined,
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      lazyConnect: false,
-      retryStrategy: (times) => {
-        if (times > 20) {
-          this.logger.error('Redis reconnect gave up after repeated failures');
-          return null;
+    const redisHost = this.configService.get<string>('REDIS_HOST');
+    
+    // If no Redis host is configured, disable Redis silently
+    if (!redisHost || redisHost === 'localhost' || redisHost === '127.0.0.1') {
+      const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+      if (isProduction) {
+        this.enabled = false;
+        this.logger.log('Redis not configured (production mode) - running without cache');
+        return;
+      }
+    }
+
+    try {
+      this.client = new Redis({
+        host: redisHost || 'localhost',
+        port: Number(this.configService.get<string>('REDIS_PORT') || 6379),
+        password: this.configService.get<string>('REDIS_PASSWORD') || undefined,
+        maxRetriesPerRequest: 3,
+        enableReadyCheck: true,
+        lazyConnect: false,
+        connectTimeout: 5000, // 5 second timeout
+        retryStrategy: (times) => {
+          // Only retry 3 times, then give up
+          if (times > 3) {
+            this.logger.warn('Redis unavailable - running without cache');
+            this.client = null;
+            this.enabled = false;
+            return null; // Stop retrying
+          }
+          return Math.min(times * 500, 2000);
+        },
+      });
+
+      this.client.on('error', (err) => {
+        // Only log error once, not repeatedly
+        if (this.enabled) {
+          this.logger.warn(`Redis connection failed - continuing without cache: ${err.message}`);
+          this.enabled = false;
         }
-        return Math.min(times * 100, 3000);
-      },
-    });
+      });
 
-    this.client.on('error', (err) => {
-      this.logger.error(`Redis error: ${err.message}`);
-    });
-
-    this.client.on('connect', () => {
-      this.logger.log('Redis connected');
-    });
+      this.client.on('connect', () => {
+        this.logger.log('Redis connected');
+        this.enabled = true;
+      });
+    } catch (error) {
+      this.logger.warn('Redis initialization failed - running without cache');
+      this.client = null;
+      this.enabled = false;
+    }
   }
 
   onModuleDestroy() {

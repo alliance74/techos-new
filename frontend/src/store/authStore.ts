@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { UserRole } from '@/types/roles';
 
 interface User {
@@ -30,8 +30,11 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       setAuth: (user, token) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('auth_token', token);
+        // Store in both localStorage and Zustand state
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', token);
+          localStorage.setItem('auth_token', token);
+        }
         set({ user, token });
       },
       updateUser: (patch) => {
@@ -44,12 +47,19 @@ export const useAuthStore = create<AuthState>()(
         set({ user: next });
       },
       logout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('auth_token');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('auth_token');
+        }
         set({ user: null, token: null });
       },
       isAuthenticated: () => {
-        return !!get().token;
+        const token = get().token;
+        // Also check localStorage as fallback
+        if (!token && typeof window !== 'undefined') {
+          return !!(localStorage.getItem('token') || localStorage.getItem('auth_token'));
+        }
+        return !!token;
       },
       hasRole: (role: UserRole) => {
         return get().user?.role === role;
@@ -57,6 +67,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      }),
     }
   )
 );

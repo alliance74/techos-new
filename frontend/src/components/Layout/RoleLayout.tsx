@@ -22,6 +22,7 @@ export function RoleLayout({ role, children }: RoleLayoutProps) {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const config = ROLE_NAV[role];
 
   const { openMap, toggleGroup } = useSidebarGroups(
@@ -30,7 +31,15 @@ export function RoleLayout({ role, children }: RoleLayoutProps) {
     `techos-nav-${role}`,
   );
 
+  // Wait for Zustand to rehydrate from localStorage
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    // Only check auth after hydration is complete
+    if (!hydrated) return;
+    
     if (!user) {
       router.push('/login');
       return;
@@ -38,13 +47,14 @@ export function RoleLayout({ role, children }: RoleLayoutProps) {
     if (user.role !== role) {
       router.push(getRoleRoute(user.role));
     }
-  }, [user, role, router]);
+  }, [user, role, router, hydrated]);
 
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  if (!user || user.role !== role || !config) {
+  // Show loading state while hydrating or checking auth
+  if (!hydrated || !user || user.role !== role || !config) {
     return (
       <div className="min-h-screen page-shell flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-border-strong border-t-brand" />

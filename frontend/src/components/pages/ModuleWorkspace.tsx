@@ -47,6 +47,7 @@ import { TeamsWorkspace } from '@/components/teams/TeamsWorkspace';
 import { AnalyticsHub } from '@/components/analytics/AnalyticsHub';
 import { ReportsHub } from '@/components/reports/ReportsHub';
 import { EntityDetailView } from '@/components/pages/EntityDetailView';
+import { AIChatInterface } from '@/components/ai/AIChatInterface';
 import {
   Plus,
   Download,
@@ -118,7 +119,7 @@ export function ModuleWorkspace() {
     return <TeamsWorkspace breadcrumbs={breadcrumbs} />;
   }
   if (kind === 'ai') {
-    return <AiView breadcrumbs={breadcrumbs} />;
+    return <AiChatInterfaceView breadcrumbs={breadcrumbs} />;
   }
   if (kind === 'settings') {
     return <SettingsView breadcrumbs={breadcrumbs} />;
@@ -820,6 +821,35 @@ function AiView({ breadcrumbs }: { breadcrumbs: { label: string; href?: string }
     setHistory((h) => [...h, { role: 'assistant', text: content }]);
   };
 
+  const formatMessage = (text: string) => {
+    // Convert markdown-style formatting to HTML
+    let formatted = text;
+    
+    // Headers
+    formatted = formatted.replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-ink mt-4 mb-2">$1</h3>');
+    formatted = formatted.replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold text-ink mt-5 mb-3">$1</h2>');
+    formatted = formatted.replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-ink mt-6 mb-4">$1</h1>');
+    
+    // Bold
+    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-ink">$1</strong>');
+    
+    // Italic
+    formatted = formatted.replace(/\*(.+?)\*/g, '<em class="italic">$1</em>');
+    
+    // Bullet lists
+    formatted = formatted.replace(/^\* (.+)$/gm, '<li class="ml-4 mb-1">• $1</li>');
+    formatted = formatted.replace(/(<li.*<\/li>\n?)+/g, '<ul class="my-2 space-y-1">$&</ul>');
+    
+    // Horizontal rules
+    formatted = formatted.replace(/^---$/gm, '<hr class="my-4 border-border" />');
+    
+    // Line breaks
+    formatted = formatted.replace(/\n\n/g, '<br/><br/>');
+    formatted = formatted.replace(/\n/g, '<br/>');
+    
+    return formatted;
+  };
+
   const runTool = async (
     label: string,
     runner: () => Promise<any>,
@@ -850,7 +880,7 @@ function AiView({ breadcrumbs }: { breadcrumbs: { label: string; href?: string }
           loading={generateReport.isPending}
           onClick={() =>
             void runTool('Generate an executive report', () =>
-              generateReport.mutateAsync({ type: 'executive' }),
+              generateReport.mutateAsync({ type: 'executive', provider: 'gemini' }),
             )
           }
         >
@@ -861,7 +891,7 @@ function AiView({ breadcrumbs }: { breadcrumbs: { label: string; href?: string }
           variant="secondary"
           loading={analyzeRisk.isPending}
           onClick={() =>
-            void runTool('Analyze organizational risks', () => analyzeRisk.mutateAsync('openai'))
+            void runTool('Analyze organizational risks', () => analyzeRisk.mutateAsync('gemini'))
           }
         >
           Risk analysis
@@ -871,29 +901,36 @@ function AiView({ breadcrumbs }: { breadcrumbs: { label: string; href?: string }
           variant="secondary"
           loading={suggestPriorities.isPending}
           onClick={() =>
-            void runTool('Suggest priorities', () => suggestPriorities.mutateAsync('openai'))
+            void runTool('Suggest priorities', () => suggestPriorities.mutateAsync('gemini'))
           }
         >
           Suggest priorities
         </Button>
       </Card>
       <Card className="max-w-3xl space-y-4">
-        <div className="space-y-3 min-h-[280px]">
+        <div className="space-y-3 min-h-[280px] max-h-[600px] overflow-y-auto">
           {history.map((m, i) => (
-            <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : ''}`}>
+            <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'items-start'}`}>
               {m.role === 'assistant' && (
-                <div className="h-8 w-8 rounded-full bg-brand text-ink-inverse flex items-center justify-center shrink-0">
+                <div className="h-8 w-8 rounded-full bg-brand text-ink-inverse flex items-center justify-center shrink-0 mt-1">
                   <Bot className="h-4 w-4" />
                 </div>
               )}
               <div
-                className={`rounded-2xl px-4 py-2.5 text-sm max-w-[85%] ${
+                className={`rounded-2xl px-4 py-3 text-sm max-w-[85%] ${
                   m.role === 'user'
-                    ? 'bg-brand text-ink-inverse'
+                    ? 'bg-brand text-ink-inverse whitespace-pre-wrap'
                     : 'bg-bg-muted border border-border text-ink'
                 }`}
               >
-                {m.text}
+                {m.role === 'user' ? (
+                  m.text
+                ) : (
+                  <div 
+                    className="prose prose-sm max-w-none prose-headings:text-ink prose-p:text-ink prose-strong:text-ink prose-li:text-ink"
+                    dangerouslySetInnerHTML={{ __html: formatMessage(m.text) }} 
+                  />
+                )}
               </div>
             </div>
           ))}
@@ -907,7 +944,7 @@ function AiView({ breadcrumbs }: { breadcrumbs: { label: string; href?: string }
             setPrompt('');
             setHistory((h) => [...h, { role: 'user', text: q }]);
             try {
-              const response = await mutation.mutateAsync({ message: q });
+              const response = await mutation.mutateAsync({ message: q, provider: 'gemini' });
               const content = response?.data?.message || response?.message;
               if (!content) throw new Error('The assistant returned an empty response.');
               setHistory((h) => [...h, { role: 'assistant', text: content }]);
@@ -927,6 +964,19 @@ function AiView({ breadcrumbs }: { breadcrumbs: { label: string; href?: string }
           </Button>
         </form>
       </Card>
+    </div>
+  );
+}
+
+function AiChatInterfaceView({ breadcrumbs }: { breadcrumbs: { label: string; href?: string }[] }) {
+  return (
+    <div>
+      <PageHeader
+        title="AI Assistant"
+        description="Chat with your AI assistant. Conversations are saved and help the AI learn from your organization."
+        breadcrumbs={breadcrumbs}
+      />
+      <AIChatInterface />
     </div>
   );
 }
