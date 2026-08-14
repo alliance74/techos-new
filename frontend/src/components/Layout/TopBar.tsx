@@ -11,6 +11,7 @@ import {
   useMarkAsRead,
   useMarkAllAsRead,
 } from '@/hooks/useNotifications';
+import { useRealtimeNotifications } from '@/hooks/useRealtime';
 
 interface TopBarProps {
   settingsHref?: string;
@@ -32,6 +33,9 @@ export function TopBar({ settingsHref = '/ceo/settings', profileHref = '/ceo/set
   const { data: unreadCount = 0 } = useUnreadCount();
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
+
+  // Activate real-time websocket listener for notifications
+  useRealtimeNotifications();
 
   useEffect(() => {
     setShowUserMenu(false);
@@ -145,7 +149,11 @@ export function TopBar({ settingsHref = '/ceo/settings', profileHref = '/ceo/set
                             if (!n.read) markAsRead.mutate(n.id);
                             if (n.link) {
                               setShowNotifications(false);
-                              router.push(n.link);
+                              const base = pathname.split('/').slice(0, 2).join('/') || '/ceo';
+                              const targetUrl = n.link.startsWith('/') && !n.link.startsWith(base) 
+                                ? `${base}${n.link}` 
+                                : n.link;
+                              router.push(targetUrl);
                             }
                           }}
                         >
