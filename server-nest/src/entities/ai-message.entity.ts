@@ -28,7 +28,7 @@ export class AiMessage {
   @Column({ type: 'boolean', default: false })
   edited: boolean;
 
-  @Column({ name: 'edited_at', type: 'datetime', nullable: true })
+  @Column({ name: 'edited_at', nullable: true })
   editedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })

@@ -41,6 +41,22 @@ function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
   const synchronize =
     (config.get<string>('DATABASE_SYNC') || (isDev ? 'true' : 'false')) === 'true';
 
+  // Check for DATABASE_URL (connection string format - e.g., from Neon, Railway, etc.)
+  const databaseUrl = config.get<string>('DATABASE_URL');
+  
+  if (databaseUrl) {
+    return {
+      type: 'postgres',
+      url: databaseUrl,
+      entities,
+      synchronize,
+      logging: isDev,
+      retryAttempts: 10,
+      retryDelay: 3000,
+      ssl: databaseUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+    };
+  }
+
   if (dbType === 'postgres' || dbType === 'postgresql') {
     return {
       type: 'postgres',
