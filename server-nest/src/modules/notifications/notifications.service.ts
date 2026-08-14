@@ -207,4 +207,15 @@ export class NotificationsService {
       send_email: true,
     });
   }
+
+  async notifyNewMessage(channel_id: string, channel_name: string, sender_name: string, message_preview: string, recipient_id: string, org_id: string) {
+    return this.create(org_id, {
+      user_id: recipient_id,
+      type: 'new_message',
+      title: `New Message in ${channel_name}`,
+      message: `${sender_name}: ${message_preview}`,
+      link: `/messages/${channel_id}`,
+      metadata: { channel_id },
+    });
+  }
 }

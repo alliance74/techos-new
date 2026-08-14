@@ -8,6 +8,7 @@ import { ChannelMember } from '../../entities/channel-member.entity';
 import { User } from '../../entities/user.entity';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { EventsGateway } from '../../common/gateways/events.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MessagesService {
@@ -21,6 +22,7 @@ export class MessagesService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private eventsGateway: EventsGateway,
+    private notificationsService: NotificationsService,
   ) {}
 
   private formatMessage(message: Message, user?: User | null) {
@@ -112,6 +114,22 @@ export class MessagesService {
         user_id,
         channel_id,
         message.content,
+        channel.org_id,
+      );
+    }
+
+    // Notify other channel members
+    const allMembers = await this.channelMembersRepository.find({ where: { channel_id } });
+    const otherMembers = allMembers.filter(m => m.user_id !== user_id && !(createMessageDto.mentions || []).includes(m.user_id));
+    
+    for (const member of otherMembers) {
+      await this.notificationsService.notifyNewMessage(
+        channel_id,
+        channel.name || 'a channel',
+        messageWithUser?.user_name || 'Someone',
+        message.content.substring(0, 100),
+        member.user_id,
+        channel.org_id
       );
     }
 
@@ -440,20 +458,19 @@ export class MessagesService {
     sender_id: string,
     channel_id: string,
     content: string,
+    org_id: string,
   ) {
-    // This will be implemented when NotificationsService is complete
-    // For now, just send real-time notifications
     const sender = await this.usersRepository.findOne({ where: { id: sender_id } });
     const channel = await this.channelsRepository.findOne({ where: { id: channel_id } });
 
-    mention_ids.forEach((userId) => {
-      this.eventsGateway.sendNotificationToUser(userId, {
-        type: 'mention',
-        title: `${sender?.first_name} ${sender?.last_name} mentioned you`,
-        message: content.substring(0, 100),
+    for (const userId of mention_ids) {
+      await this.notificationsService.notifyMention(
+        sender_id,
+        userId,
         channel_id,
-        channel_name: channel?.name,
-      });
-    });
+        content.substring(0, 100),
+        org_id
+      );
+    }
   }
 }
