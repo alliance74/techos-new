@@ -154,7 +154,7 @@ export function SidebarNav({
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-xl transition-colors duration-fast',
+                        'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-xl transition-colors duration-fast relative group',
                         active
                           ? 'bg-sidebar-active text-sidebar-text-active shadow-sm'
                           : 'text-sidebar-text hover:bg-sidebar-hover hover:text-ink',
@@ -163,7 +163,15 @@ export function SidebarNav({
                       tabIndex={open ? 0 : -1}
                     >
                       <Icon className="h-[18px] w-[18px] shrink-0" />
-                      <span className="truncate">{item.name}</span>
+                      <span className="truncate flex-1">{item.name}</span>
+                      {!!item.badgeCount && item.badgeCount > 0 && (
+                        <span className={cn(
+                          "min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm transition-colors",
+                          active ? "bg-white text-sidebar-active" : "bg-brand text-white group-hover:bg-brand-hover"
+                        )}>
+                          {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -176,6 +184,8 @@ export function SidebarNav({
   );
 }
 
+import { useNotifications } from '@/hooks/useNotifications';
+
 /** Convenience wrapper that owns collapse state (single sidebar instance). */
 export function SidebarNavConnected(props: SidebarNavProps) {
   const { openMap, toggleGroup, pathname } = useSidebarGroups(
@@ -183,9 +193,43 @@ export function SidebarNavConnected(props: SidebarNavProps) {
     props.basePath,
     props.storageKey,
   );
+
+  const { data: notifications = [] } = useNotifications();
+
+  // Compute unread counts per base module (e.g. '/tasks' -> 3)
+  const unreadCounts: Record<string, number> = {};
+  for (const notif of notifications) {
+    if (!notif.read && notif.link) {
+      const parts = notif.link.split('/');
+      const moduleName = parts[1]; // e.g. "tasks" or "meetings"
+      if (moduleName) {
+        unreadCounts[moduleName] = (unreadCounts[moduleName] || 0) + 1;
+      }
+    }
+  }
+
+  // Inject badge counts into navigation groups
+  const groupsWithCounts = props.groups.map(group => ({
+    ...group,
+    items: group.items.map(item => {
+      let badgeCount = 0;
+      if (item.href.endsWith('/tasks')) badgeCount = unreadCounts['tasks'] || 0;
+      else if (item.href.endsWith('/meetings')) badgeCount = unreadCounts['meetings'] || 0;
+      else if (item.href.endsWith('/messages') || item.href.endsWith('/channels')) {
+        badgeCount = (unreadCounts['messages'] || 0) + (unreadCounts['channels'] || 0);
+      }
+      else if (item.href.endsWith('/projects')) badgeCount = unreadCounts['projects'] || 0;
+
+      return {
+        ...item,
+        badgeCount
+      };
+    })
+  }));
+
   return (
     <SidebarNav
-      groups={props.groups}
+      groups={groupsWithCounts}
       basePath={props.basePath}
       openMap={openMap}
       toggleGroup={toggleGroup}

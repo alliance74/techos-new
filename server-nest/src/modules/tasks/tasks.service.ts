@@ -12,6 +12,7 @@ import {
   ProjectViewer,
 } from '../../common/utils/project-visibility';
 import { assertDeliveryAdmin } from '../../common/utils/org-admin';
+import { NotificationsService } from '../notifications/notifications.service';
 
 function normalizeAssigneeFields(dto: any): { assignee_id: string | null; assignee_ids: string[] } {
   const fromArray: string[] = Array.isArray(dto?.assignee_ids)
@@ -38,6 +39,7 @@ export class TasksService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private activityLogService: ActivityLogService,
+    private notificationsService: NotificationsService,
   ) {}
 
   private async getAccessibleProjectIds(org_id: string, user?: ProjectViewer): Promise<string[]> {
@@ -80,6 +82,24 @@ export class TasksService {
     } as Partial<Task>);
 
     const saved = await this.tasksRepository.save(task);
+    
+    if (saved.assignee_ids && saved.assignee_ids.length > 0) {
+      const project = await this.projectsRepository.findOne({ where: { id: saved.project_id } });
+      const projectName = project?.name || 'Unknown Project';
+      
+      for (const id of saved.assignee_ids) {
+        if (id !== actor?.id) {
+          await this.notificationsService.notifyTaskAssigned(
+            saved.id,
+            saved.title,
+            id,
+            projectName,
+            org_id
+          );
+        }
+      }
+    }
+    
     await this.activityLogService.log({
       org_id,
       actor,
@@ -260,6 +280,42 @@ export class TasksService {
 
     await this.tasksRepository.update(id, patch);
     const updated = await this.tasksRepository.findOne({ where: { id } });
+    
+    const project = await this.projectsRepository.findOne({ where: { id: updated?.project_id || task.project_id } });
+    const projectName = project?.name || 'Unknown Project';
+
+    // Notify new assignees
+    if (updated?.assignee_ids) {
+      const oldIds = task.assignee_ids || [];
+      const newIds = updated.assignee_ids.filter(id => !oldIds.includes(id) && id !== actor?.id);
+      
+      for (const id of newIds) {
+        await this.notificationsService.notifyTaskAssigned(
+          updated.id,
+          updated.title,
+          id,
+          projectName,
+          org_id
+        );
+      }
+    }
+
+    // Notify assignees of status change
+    if (updated && updated.status !== task.status && updated.assignee_ids) {
+      for (const id of updated.assignee_ids) {
+        if (id !== actor?.id) {
+          await this.notificationsService.notifyTaskStatusChanged(
+            updated.id,
+            updated.title,
+            id,
+            updated.status,
+            projectName,
+            org_id
+          );
+        }
+      }
+    }
+    
     await this.activityLogService.log({
       org_id,
       actor,

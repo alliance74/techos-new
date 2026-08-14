@@ -106,7 +106,9 @@ export function TopBar({ settingsHref = '/ceo/settings', profileHref = '/ceo/set
             >
               <Bell className="h-5 w-5 text-ink-secondary" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 min-w-[8px] h-2 w-2 bg-brand rounded-full" />
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-brand rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-2 ring-surface border border-transparent">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
               )}
             </button>
 

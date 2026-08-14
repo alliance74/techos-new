@@ -185,4 +185,26 @@ export class NotificationsService {
       send_email: true,
     });
   }
+  async notifyTaskStatusChanged(task_id: string, task_title: string, user_id: string, new_status: string, project_name: string, org_id: string) {
+    return this.create(org_id, {
+      user_id,
+      type: 'task_status_changed',
+      title: 'Task Status Updated',
+      message: `Task "${task_title}" in ${project_name} was moved to ${new_status}`,
+      link: `/tasks/${task_id}`,
+      metadata: { task_id, project_name, new_status },
+    });
+  }
+
+  async notifyProjectInvite(project_id: string, project_name: string, user_id: string, inviter_name: string, org_id: string) {
+    return this.create(org_id, {
+      user_id,
+      type: 'project_invite',
+      title: 'Added to Project',
+      message: `${inviter_name} added you to the project: ${project_name}`,
+      link: `/projects/${project_id}`,
+      metadata: { project_id, inviter_name },
+      send_email: true,
+    });
+  }
 }

@@ -11,6 +11,7 @@ import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { CreateActionItemDto } from './dto/create-action-item.dto';
 import { EmailService } from '../../common/services/email.service';
 import { assertOrgAdmin, isOrgAdmin } from '../../common/utils/org-admin';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MeetingsService {
@@ -24,6 +25,7 @@ export class MeetingsService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private emailService: EmailService,
+    private notificationsService: NotificationsService,
   ) {}
 
   private userLabel(user?: User | null) {
@@ -443,6 +445,16 @@ export class MeetingsService {
 
     const emails = participants.map((p) => p.email);
     const startDateTime = `${meeting.date} ${meeting.start_time}`;
+
+    for (const participant_id of participant_ids) {
+      await this.notificationsService.notifyMeetingInvite(
+        meeting.id,
+        meeting.title,
+        participant_id,
+        startDateTime,
+        meeting.org_id
+      );
+    }
 
     await this.emailService.sendMeetingInviteEmail(
       emails,

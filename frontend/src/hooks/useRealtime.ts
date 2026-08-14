@@ -115,6 +115,7 @@ export function useRealtimeNotifications() {
 
     const handleNotification = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     };
 
     socket.on('notification', handleNotification);
