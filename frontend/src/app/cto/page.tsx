@@ -146,7 +146,7 @@ export default function CTODashboard() {
                   className="block p-4 bg-bg-muted border border-border rounded-lg hover:border-brand/40 transition-all"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <p className="font-medium text-ink">{project.name || project.title}</p>
+                    <p className="font-medium text-ink">{project.name}</p>
                     <Badge variant={
                       project.status === 'active' ? 'success' :
                       project.status === 'planning' ? 'info' : 'default'
@@ -201,7 +201,7 @@ export default function CTODashboard() {
                     </Badge>
                   </div>
                   <p className="text-xs text-ink-muted">
-                    {bug.status} • {bug.assignee_name || 'Unassigned'}
+                    {bug.status} • {bug.assignee_id || 'Unassigned'}
                   </p>
                 </div>
               ))}

@@ -16,7 +16,7 @@
 ### 1. ✅ Updated Configuration
 **File**: `server-nest/.env`
 ```env
-DATABASE_URL=postgresql://neondb_owner:npg_1XKIM2iUzSoA@ep-dry-thunder-axkzzs90.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql://YOUR_NEON_CONNECTION_STRING
 ```
 
 ### 2. ✅ Updated TypeORM Configuration

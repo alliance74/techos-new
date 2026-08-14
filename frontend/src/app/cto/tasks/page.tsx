@@ -50,14 +50,12 @@ export default function CTOTasksPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <Badge variant="success"><CheckCircle className="h-3 w-3 mr-1" />Completed</Badge>;
+      case 'done':
+        return <Badge variant="success"><CheckCircle className="h-3 w-3 mr-1" />Done</Badge>;
       case 'in_progress':
         return <Badge variant="info"><Clock className="h-3 w-3 mr-1" />In Progress</Badge>;
       case 'todo':
         return <Badge variant="default"><Circle className="h-3 w-3 mr-1" />To Do</Badge>;
-      case 'blocked':
-        return <Badge variant="error"><AlertCircle className="h-3 w-3 mr-1" />Blocked</Badge>;
       default:
         return <Badge variant="default">{status}</Badge>;
     }
@@ -87,9 +85,9 @@ export default function CTOTasksPage() {
   }
 
   const totalTasks = tasks?.length || 0;
-  const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
+  const completedTasks = tasks?.filter(t => t.status === 'done').length || 0;
   const inProgressTasks = tasks?.filter(t => t.status === 'in_progress').length || 0;
-  const blockedTasks = tasks?.filter(t => t.status === 'blocked').length || 0;
+  const todoTasks = tasks?.filter(t => t.status === 'todo').length || 0;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (
@@ -130,12 +128,12 @@ export default function CTOTasksPage() {
         </Card>
         <Card className="p-6 bg-surface border border-border">
           <div className="flex items-center gap-3 mb-2">
-            <AlertCircle className="h-4 w-4 text-danger" />
-            <span className="text-sm text-ink-muted">Blocked</span>
+            <AlertCircle className="h-4 w-4 text-warning" />
+            <span className="text-sm text-ink-muted">To Do</span>
           </div>
-          <p className="text-3xl font-bold text-ink">{blockedTasks}</p>
-          {blockedTasks > 0 && (
-            <p className="text-xs text-danger mt-2">Needs attention</p>
+          <p className="text-3xl font-bold text-ink">{todoTasks}</p>
+          {todoTasks > 0 && (
+            <p className="text-xs text-warning mt-2">Pending work</p>
           )}
         </Card>
       </div>
@@ -167,8 +165,7 @@ export default function CTOTasksPage() {
               <option value="all">All Status</option>
               <option value="todo">To Do</option>
               <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="blocked">Blocked</option>
+              <option value="done">Done</option>
             </select>
             <select
               value={priorityFilter}
@@ -234,7 +231,7 @@ export default function CTOTasksPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-ink-secondary text-sm">
-                      {task.assignee_name || 'Unassigned'}
+                      {task.assignee_id || 'Unassigned'}
                     </TableCell>
                     <TableCell>{getPriorityBadge(task.priority)}</TableCell>
                     <TableCell>{getStatusBadge(task.status)}</TableCell>

@@ -19,7 +19,6 @@ import {
   ChevronRight,
   Plus,
   Calendar,
-  Users,
   Target,
   TrendingUp,
   Clock,
@@ -38,7 +37,6 @@ export default function CTOProjectsPage() {
       projects?.filter((project) => {
         const matchesSearch =
           project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           project.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -191,7 +189,7 @@ export default function CTOProjectsPage() {
                     <TableCell>
                       <div>
                         <p className="font-medium text-ink group-hover/row:text-brand">
-                          {project.name || project.title}
+                          {project.name}
                         </p>
                         {project.description && (
                           <p className="text-sm text-ink-muted line-clamp-1 mt-1">
@@ -215,16 +213,7 @@ export default function CTOProjectsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {project.team_members?.length ? (
-                        <div className="flex items-center gap-2">
-                          <Users className="h-3 w-3 text-ink-muted" />
-                          <span className="text-sm text-ink-secondary">
-                            {project.team_members.length} members
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-ink-muted">—</span>
-                      )}
+                      <span className="text-sm text-ink-muted">—</span>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="inline-flex items-center gap-1 text-sm font-medium text-brand">
