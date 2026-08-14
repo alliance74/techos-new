@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Hash,
   Lock,
@@ -106,8 +107,9 @@ export function MessagesWorkspace(_props: MessagesWorkspaceProps) {
   const { data: users = [] } = useUsers();
   const user = useAuthStore((s) => s.user);
   const { isConnected } = useSocket();
+  const searchParams = useSearchParams();
 
-  const [activeId, setActiveId] = useState('');
+  const [activeId, setActiveId] = useState(searchParams.get('channel') || '');
   const [draft, setDraft] = useState('');
   const [threadId, setThreadId] = useState<string | null>(null);
   const [threadDraft, setThreadDraft] = useState('');
@@ -170,6 +172,11 @@ export function MessagesWorkspace(_props: MessagesWorkspaceProps) {
   useEffect(() => {
     if (!activeId && channels[0]?.id) setActiveId(channels[0].id);
   }, [activeId, channels]);
+
+  useEffect(() => {
+    const channelParam = searchParams.get('channel');
+    if (channelParam) setActiveId(channelParam);
+  }, [searchParams]);
 
   useEffect(() => {
     if (channelId) markRead.mutate(channelId);

@@ -150,9 +150,18 @@ export function TopBar({ settingsHref = '/ceo/settings', profileHref = '/ceo/set
                             if (n.link) {
                               setShowNotifications(false);
                               const base = pathname.split('/').slice(0, 2).join('/') || '/ceo';
-                              const targetUrl = n.link.startsWith('/') && !n.link.startsWith(base) 
-                                ? `${base}${n.link}` 
-                                : n.link;
+                              let parsedLink = n.link;
+                              // Transform /messages/:id to /messages?channel=:id
+                              if (parsedLink.startsWith('/messages/')) {
+                                const parts = parsedLink.split('/');
+                                if (parts.length === 3) {
+                                  parsedLink = `/messages?channel=${parts[2]}`;
+                                }
+                              }
+                              
+                              const targetUrl = parsedLink.startsWith('/') && !parsedLink.startsWith(base) 
+                                ? `${base}${parsedLink}` 
+                                : parsedLink;
                               router.push(targetUrl);
                             }
                           }}
