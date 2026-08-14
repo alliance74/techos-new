@@ -108,9 +108,6 @@ export default function BudgetsPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="font-semibold text-ink text-lg">{budget.name}</h3>
-                  {budget.description && (
-                    <p className="text-sm text-ink-muted mt-1">{budget.description}</p>
-                  )}
                 </div>
                 <Badge variant={
                   budget.pct >= 90 ? 'error' :
