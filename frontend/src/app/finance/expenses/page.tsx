@@ -205,7 +205,7 @@ export default function ExpensesPage() {
                       {expense.date ? new Date(expense.date).toLocaleDateString() : '—'}
                     </TableCell>
                     <TableCell className="text-ink-secondary text-sm">
-                      {expense.submitted_by_name || 'Unknown'}
+                      {expense.submitted_by || 'Unknown'}
                     </TableCell>
                     <TableCell>{getStatusBadge(expense.status)}</TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
