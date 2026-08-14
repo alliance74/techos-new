@@ -11,6 +11,7 @@ async function bootstrap() {
     'http://localhost:5173',
     'http://localhost:3000',
     'https://techos-new-1urb-kappa.vercel.app',
+    'https://techos.blinktechnologiz.com',
   ];
   if (process.env.CORS_ORIGIN) {
     allowedOrigins.push(...process.env.CORS_ORIGIN.split(','));
