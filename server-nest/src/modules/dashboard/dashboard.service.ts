@@ -94,7 +94,7 @@ export class DashboardService {
 
     const openBugs = myBugs.filter((b) => !/done|closed|resolved/i.test(String(b.status)));
     const activeTasks = assignedTasks.filter((t) => !/done|completed|closed/i.test(String(t.status)));
-    const inProgress = assignedTasks.filter((t) => /in_progress|in-progress/i.test(String(t.status)));
+    const inProgress = assignedTasks.filter((t) => /in_progress|in-progress|doing|in progress/i.test(String(t.status)));
     const todo = assignedTasks.filter((t) => /todo|backlog|open/i.test(String(t.status)));
 
     const activeSprint = await this.sprintRepository.findOne({
