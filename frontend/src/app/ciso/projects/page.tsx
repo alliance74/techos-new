@@ -42,10 +42,10 @@ export default function CisoProjectsPage() {
         sortable: true,
         render: (row) => (
           <div>
-            <p className="font-medium text-ink">{row.name || row.title}</p>
-            {row.description && (
-              <p className="text-sm text-ink-muted line-clamp-1 mt-1">{row.description}</p>
-            )}
+            <p className="font-medium text-ink">{row.name}</p>
+            <p className="text-sm text-ink-muted mt-1">
+              Priority: {row.priority} • Status: {row.status}
+            </p>
           </div>
         ),
       },

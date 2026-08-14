@@ -41,7 +41,7 @@ export default function CTOAnalyticsPage() {
   const activeProjects = projects?.filter(p => p.status === 'active').length || 0;
   const completedProjects = projects?.filter(p => p.status === 'completed').length || 0;
   const totalTasks = tasks?.length || 0;
-  const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
+  const completedTasks = tasks?.filter(t => t.status === 'done').length || 0;
   const inProgressTasks = tasks?.filter(t => t.status === 'in_progress').length || 0;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 

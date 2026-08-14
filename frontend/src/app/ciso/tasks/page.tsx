@@ -38,9 +38,9 @@ export default function CisoTasksPage() {
         render: (row) => (
           <div>
             <p className="font-medium text-ink">{row.title}</p>
-            {row.description && (
-              <p className="text-sm text-ink-muted line-clamp-1 mt-1">{row.description}</p>
-            )}
+            <p className="text-sm text-ink-muted mt-1">
+              Status: {row.status} • Priority: {row.priority}
+            </p>
           </div>
         ),
       },
@@ -72,7 +72,7 @@ export default function CisoTasksPage() {
         key: 'assignee',
         header: 'Assignee',
         render: (row) => (
-          <span className="text-sm text-ink-secondary">{row.assignee_name || 'Unassigned'}</span>
+          <span className="text-sm text-ink-secondary">{row.assignee_id ? 'Assigned' : 'Unassigned'}</span>
         ),
       },
       {

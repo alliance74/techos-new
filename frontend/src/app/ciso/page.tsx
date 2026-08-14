@@ -172,13 +172,13 @@ export default function CisoDashboardPage() {
                 className="p-3 bg-bg-muted border border-border rounded-lg"
               >
                 <div className="flex items-start justify-between mb-1">
-                  <p className="font-medium text-ink text-sm">{audit.name || audit.title}</p>
+                  <p className="font-medium text-ink text-sm">{audit.name}</p>
                   <Badge variant={audit.audit_status === 'needed' ? 'warning' : 'info'}>
                     {audit.audit_status === 'needed' ? 'Needs Audit' : 'In Progress'}
                   </Badge>
                 </div>
                 <p className="text-xs text-ink-muted">
-                  {audit.description?.substring(0, 60)}...
+                  Project requires security audit
                 </p>
               </div>
             ))}

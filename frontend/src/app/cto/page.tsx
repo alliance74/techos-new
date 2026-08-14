@@ -41,10 +41,10 @@ export default function CTODashboard() {
   }
 
   const activeProjects = projects?.filter(p => p.status === 'active').length || 0;
-  const openTasks = tasks?.filter(t => t.status !== 'completed' && t.status !== 'done').length || 0;
+  const openTasks = tasks?.filter(t => t.status !== 'done').length || 0;
   const inProgressTasks = tasks?.filter(t => t.status === 'in_progress').length || 0;
   const openBugs = (dashboard?.bug_counts?.open || 0);
-  const pendingReviews = codeReviews?.filter(cr => cr.status === 'pending' || cr.status === 'open').length || 0;
+  const pendingReviews = codeReviews?.filter(cr => cr.status !== 'approved' && cr.status !== 'rejected').length || 0;
 
   const stats = [
     {
