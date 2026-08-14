@@ -8,6 +8,7 @@ export interface CisoTask {
   status: string;
   priority: string;
   project_id?: string;
+  assignee_id?: string;
   finished: boolean;
 }
 

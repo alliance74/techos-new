@@ -142,7 +142,7 @@ export default function CisoDashboardPage() {
                   </Badge>
                 </div>
                 <p className="text-xs text-ink-muted">
-                  {task.status} • {task.assignee_name || 'Unassigned'}
+                  {task.status} • {task.assignee_id ? 'Assigned' : 'Unassigned'}
                 </p>
               </div>
             ))}
