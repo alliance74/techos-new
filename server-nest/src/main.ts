@@ -7,8 +7,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   // Enable CORS
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://techos-new-1urb-kappa.vercel.app',
+  ];
+  if (process.env.CORS_ORIGIN) {
+    allowedOrigins.push(...process.env.CORS_ORIGIN.split(','));
+  }
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
   });
   
