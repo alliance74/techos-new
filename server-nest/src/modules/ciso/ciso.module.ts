@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Task } from '../../entities/task.entity';
-import { Project } from '../../entities/project.entity';
 import { Report } from '../../entities/report.entity';
+import { ProjectAudit } from '../../entities/project-audit.entity';
+import { AuditTask } from '../../entities/audit-task.entity';
 import { CisoController } from './ciso.controller';
 import { CisoService } from './ciso.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Task, Project, Report])],
+  imports: [TypeOrmModule.forFeature([ProjectAudit, AuditTask, Report])],
   controllers: [CisoController],
   providers: [CisoService],
   exports: [CisoService],

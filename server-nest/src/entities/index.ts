@@ -39,6 +39,8 @@ import { CodeReview } from './code-review.entity';
 import { AiConversation } from './ai-conversation.entity';
 import { AiMessage } from './ai-message.entity';
 import { AiUsage } from './ai-usage.entity';
+import { ProjectAudit } from './project-audit.entity';
+import { AuditTask } from './audit-task.entity';
 
 export const entities = [
   Organization,
@@ -81,6 +83,8 @@ export const entities = [
   AiConversation,
   AiMessage,
   AiUsage,
+  ProjectAudit,
+  AuditTask,
 ];
 
 // Export individual entities
@@ -125,4 +129,6 @@ export {
   AiConversation,
   AiMessage,
   AiUsage,
+  ProjectAudit,
+  AuditTask,
 };

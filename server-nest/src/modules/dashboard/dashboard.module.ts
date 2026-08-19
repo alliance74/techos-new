@@ -15,6 +15,8 @@ import { Expense } from '../../entities/expense.entity';
 import { LeaveRequest } from '../../entities/leave-request.entity';
 import { Report } from '../../entities/report.entity';
 import { User } from '../../entities/user.entity';
+import { ProjectAudit } from '../../entities/project-audit.entity';
+import { AuditTask } from '../../entities/audit-task.entity';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { User } from '../../entities/user.entity';
       LeaveRequest,
       Report,
       User,
+      ProjectAudit,
+      AuditTask,
     ]),
   ],
   controllers: [DashboardController],

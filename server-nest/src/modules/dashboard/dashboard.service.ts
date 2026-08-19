@@ -14,6 +14,8 @@ import { Expense } from '../../entities/expense.entity';
 import { LeaveRequest } from '../../entities/leave-request.entity';
 import { Report } from '../../entities/report.entity';
 import { User } from '../../entities/user.entity';
+import { ProjectAudit } from '../../entities/project-audit.entity';
+import { AuditTask } from '../../entities/audit-task.entity';
 import { canViewProject } from '../../common/utils/project-visibility';
 
 @Injectable()
@@ -45,6 +47,10 @@ export class DashboardService {
     private reportRepository: Repository<Report>,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(ProjectAudit)
+    private projectAuditRepository: Repository<ProjectAudit>,
+    @InjectRepository(AuditTask)
+    private auditTaskRepository: Repository<AuditTask>,
   ) {}
 
   async getDeveloperDashboard(user_id: string, org_id: string, user_role?: string) {
@@ -281,20 +287,11 @@ export class DashboardService {
   }
 
   async getCisoDashboard(org_id: string) {
-    const [tasks, projects, reports] = await Promise.all([
-      this.taskRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
-      this.projectRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
+    const [tasks, audits, reports] = await Promise.all([
+      this.auditTaskRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
+      this.projectAuditRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
       this.reportRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
     ]);
-
-    const auditProjects = projects
-      .map((project) => {
-        const metadata = project.metadata || {};
-        const auditStatus = metadata.audit_status || 'needed';
-        const auditRequired = Boolean(metadata.audit_required ?? ['high', 'critical'].includes(project.priority));
-        return { ...project, audit_status: auditStatus, audit_required: auditRequired };
-      })
-      .filter((project) => project.audit_required);
 
     const securityReports = reports.filter((report) =>
       ['security', 'audit', 'compliance', 'risk'].includes((report.type || '').toLowerCase()),
@@ -309,10 +306,10 @@ export class DashboardService {
           not_finished: tasks.filter((task) => task.status !== 'done').length,
         },
         audits: {
-          total: auditProjects.length,
-          needed: auditProjects.filter((project: any) => project.audit_status === 'needed').length,
-          in_progress: auditProjects.filter((project: any) => project.audit_status === 'in_progress').length,
-          completed: auditProjects.filter((project: any) => project.audit_status === 'completed').length,
+          total: audits.length,
+          needed: audits.filter((audit) => audit.status === 'needed').length,
+          in_progress: audits.filter((audit) => audit.status === 'in_progress').length,
+          completed: audits.filter((audit) => audit.status === 'completed').length,
         },
         reports: {
           total: securityReports.length,

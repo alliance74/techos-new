@@ -8,55 +8,84 @@ import { DataTable, type Column } from '@/components/UI/DataTable';
 import { Badge } from '@/components/UI/Badge';
 import { Select } from '@/components/UI/Select';
 import { Button } from '@/components/UI/Button';
-import { useCisoTasks, useUpdateCisoTaskStatus, type CisoTask } from '@/hooks/useCiso';
-import { 
-  CheckSquare, 
-  AlertTriangle, 
-  Clock, 
+import { ConfirmDialog } from '@/components/UI/ConfirmDialog';
+import { AuditTaskFormModal } from '@/components/ciso/AuditTaskFormModal';
+import {
+  useCisoAuditProjects,
+  useCisoTasks,
+  useCreateAuditTask,
+  useDeleteAuditTask,
+  useUpdateAuditTask,
+  useUpdateCisoTaskStatus,
+  type AuditTaskPriority,
+  type AuditTaskStatus,
+  type CisoTask,
+} from '@/hooks/useCiso';
+import {
+  CheckSquare,
+  AlertTriangle,
+  Clock,
   CheckCircle,
-  Shield,
-  Target
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
+
+function priorityVariant(priority: string) {
+  if (priority === 'critical') return 'error' as const;
+  if (priority === 'high') return 'warning' as const;
+  if (priority === 'medium') return 'info' as const;
+  return 'default' as const;
+}
 
 export default function CisoTasksPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<'all' | 'finished' | 'not_finished'>('all');
   const queryFilter = statusFilter === 'all' ? undefined : statusFilter;
   const { data: tasks = [], isLoading } = useCisoTasks(queryFilter);
+  const { data: audits = [] } = useCisoAuditProjects();
+  const createTask = useCreateAuditTask();
+  const updateTask = useUpdateAuditTask();
   const updateStatus = useUpdateCisoTaskStatus();
+  const deleteTask = useDeleteAuditTask();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<CisoTask | null>(null);
+  const [deleting, setDeleting] = useState<CisoTask | null>(null);
 
-  const finishedCount = tasks.filter(t => t.finished).length;
-  const notFinishedCount = tasks.filter(t => !t.finished).length;
-  const criticalCount = tasks.filter(t => (t.priority === 'critical' || t.priority === 'high') && !t.finished).length;
+  const finishedCount = tasks.filter((t) => t.finished).length;
+  const notFinishedCount = tasks.filter((t) => !t.finished).length;
+  const criticalCount = tasks.filter(
+    (t) => (t.priority === 'critical' || t.priority === 'high') && !t.finished,
+  ).length;
 
   const columns: Column<CisoTask>[] = useMemo(
     () => [
-      { 
-        key: 'title', 
-        header: 'Task', 
+      {
+        key: 'title',
+        header: 'Task',
         sortable: true,
         render: (row) => (
           <div>
             <p className="font-medium text-ink">{row.title}</p>
-            <p className="text-sm text-ink-muted mt-1">
-              Status: {row.status} • Priority: {row.priority}
-            </p>
+            {row.description && (
+              <p className="text-sm text-ink-muted line-clamp-1 mt-1">{row.description}</p>
+            )}
           </div>
+        ),
+      },
+      {
+        key: 'project_audit_name',
+        header: 'Project Audit',
+        sortable: true,
+        render: (row) => (
+          <span className="text-sm text-ink-secondary">{row.project_audit_name || '—'}</span>
         ),
       },
       {
         key: 'priority',
         header: 'Priority',
         sortable: true,
-        render: (row) => (
-          <Badge variant={
-            row.priority === 'critical' ? 'error' : 
-            row.priority === 'high' ? 'warning' : 
-            row.priority === 'medium' ? 'info' : 'default'
-          }>
-            {row.priority}
-          </Badge>
-        ),
+        render: (row) => <Badge variant={priorityVariant(row.priority)}>{row.priority}</Badge>,
       },
       {
         key: 'status',
@@ -69,27 +98,34 @@ export default function CisoTasksPage() {
         ),
       },
       {
-        key: 'assignee',
-        header: 'Assignee',
-        render: (row) => (
-          <span className="text-sm text-ink-secondary">{row.assignee_id ? 'Assigned' : 'Unassigned'}</span>
-        ),
-      },
-      {
         key: 'actions',
-        header: 'Action',
+        header: 'Actions',
         render: (row) => (
-          <Button
-            size="sm"
-            variant={row.finished ? 'outline' : 'primary'}
-            onClick={(e) => {
-              e.stopPropagation();
-              updateStatus.mutate({ id: row.id, finished: !row.finished });
-            }}
-            loading={updateStatus.isPending}
-          >
-            {row.finished ? 'Reopen' : 'Complete'}
-          </Button>
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+              size="sm"
+              variant={row.finished ? 'outline' : 'primary'}
+              onClick={() => updateStatus.mutate({ id: row.id, finished: !row.finished })}
+              loading={updateStatus.isPending}
+            >
+              {row.finished ? 'Reopen' : 'Complete'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEditing(row);
+                setFormOpen(true);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setDeleting(row)}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete
+            </Button>
+          </div>
         ),
       },
     ],
@@ -99,8 +135,19 @@ export default function CisoTasksPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Security Tasks"
-        description="Track and manage security task completion status"
+        title="Audit Tasks"
+        description="Create tasks against a project audit so security work stays organized."
+        actions={
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Audit Task
+          </Button>
+        }
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -136,7 +183,7 @@ export default function CisoTasksPage() {
 
       <Card className="p-6 bg-surface border border-border">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-ink">All Security Tasks</h2>
+          <h2 className="text-lg font-semibold text-ink">All Audit Tasks</h2>
           <div className="w-52">
             <Select
               value={statusFilter}
@@ -153,14 +200,63 @@ export default function CisoTasksPage() {
           columns={columns}
           data={tasks}
           isLoading={isLoading}
-          searchKeys={['title', 'description', 'status', 'priority', 'assignee_name']}
+          searchKeys={['title', 'description', 'status', 'priority', 'project_audit_name']}
           pageSize={10}
           getRowId={(row) => row.id}
-          emptyTitle="No security tasks found"
-          emptyDescription="Tasks will appear here when created."
+          emptyTitle="No audit tasks found"
+          emptyDescription="Create a project audit, then add tasks and select which audit they belong to."
           onRowClick={(row) => router.push(`/ciso/tasks/${row.id}`)}
         />
       </Card>
+
+      {formOpen && (
+        <AuditTaskFormModal
+          key={editing?.id || 'create'}
+          isOpen={formOpen}
+          title={editing ? 'Edit Audit Task' : 'Create Audit Task'}
+          audits={audits}
+          initial={
+            editing
+              ? {
+                  project_audit_id: editing.project_audit_id,
+                  title: editing.title,
+                  description: editing.description || '',
+                  priority: editing.priority as AuditTaskPriority,
+                  status: (editing.status as AuditTaskStatus) || (editing.finished ? 'done' : 'todo'),
+                }
+              : undefined
+          }
+          loading={createTask.isPending || updateTask.isPending}
+          onClose={() => {
+            setFormOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={async (payload) => {
+            if (editing) {
+              await updateTask.mutateAsync({ id: editing.id, ...payload });
+            } else {
+              await createTask.mutateAsync(payload);
+            }
+            setFormOpen(false);
+            setEditing(null);
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleting)}
+        title="Delete audit task"
+        description={`Delete "${deleting?.title}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteTask.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={async () => {
+          if (!deleting) return;
+          await deleteTask.mutateAsync(deleting.id);
+          setDeleting(null);
+        }}
+      />
     </div>
   );
 }

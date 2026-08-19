@@ -28,9 +28,8 @@ export default function CisoDashboardPage() {
   const { data: audits = [], isLoading: auditsLoading } = useCisoAuditProjects();
   const { data: reports = [], isLoading: reportsLoading } = useCisoReports();
 
-  const inProgressAudits = audits.filter((project) => project.audit_status === 'in_progress').length;
-  const neededAudits = audits.filter((project) => project.audit_status === 'needed').length;
-  const completedAudits = audits.filter((project) => project.audit_status === 'completed').length;
+  const inProgressAudits = audits.filter((project) => project.status === 'in_progress').length;
+  const neededAudits = audits.filter((project) => project.status === 'needed').length;
   const criticalTasks = pendingTasks.filter((task) => task.priority === 'critical' || task.priority === 'high').length;
 
   if (tasksLoading || auditsLoading || reportsLoading) {
@@ -142,7 +141,8 @@ export default function CisoDashboardPage() {
                   </Badge>
                 </div>
                 <p className="text-xs text-ink-muted">
-                  {task.status} • {task.assignee_id ? 'Assigned' : 'Unassigned'}
+                  {task.status.replace('_', ' ')}
+                  {task.project_audit_name ? ` • ${task.project_audit_name}` : ''}
                 </p>
               </div>
             ))}
@@ -166,19 +166,19 @@ export default function CisoDashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {audits.filter(a => a.audit_status === 'needed' || a.audit_status === 'in_progress').slice(0, 5).map((audit) => (
+            {audits.filter(a => a.status === 'needed' || a.status === 'in_progress').slice(0, 5).map((audit) => (
               <div
                 key={audit.id}
                 className="p-3 bg-bg-muted border border-border rounded-lg"
               >
                 <div className="flex items-start justify-between mb-1">
                   <p className="font-medium text-ink text-sm">{audit.name}</p>
-                  <Badge variant={audit.audit_status === 'needed' ? 'warning' : 'info'}>
-                    {audit.audit_status === 'needed' ? 'Needs Audit' : 'In Progress'}
+                  <Badge variant={audit.status === 'needed' ? 'warning' : 'info'}>
+                    {audit.status === 'needed' ? 'Needs Audit' : 'In Progress'}
                   </Badge>
                 </div>
                 <p className="text-xs text-ink-muted">
-                  Project requires security audit
+                  {audit.description?.substring(0, 60) || 'No description'}
                 </p>
               </div>
             ))}

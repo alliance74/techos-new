@@ -7,13 +7,25 @@ import { Card } from '@/components/UI/Card';
 import { PageHeader } from '@/components/UI/PageHeader';
 import { Badge } from '@/components/UI/Badge';
 import { Select } from '@/components/UI/Select';
-import { useCisoAuditProjects, useUpdateAuditProjectStatus, type CisoAuditProject } from '@/hooks/useCiso';
-import { 
-  ShieldCheck, 
-  AlertTriangle, 
-  Clock, 
+import { Button } from '@/components/UI/Button';
+import { ConfirmDialog } from '@/components/UI/ConfirmDialog';
+import { ProjectAuditFormModal } from '@/components/ciso/ProjectAuditFormModal';
+import {
+  useCisoAuditProjects,
+  useCreateProjectAudit,
+  useDeleteProjectAudit,
+  useUpdateProjectAudit,
+  type CisoAuditProject,
+  type ProjectAuditStatus,
+} from '@/hooks/useCiso';
+import {
+  ShieldCheck,
+  AlertTriangle,
+  Clock,
   CheckCircle,
-  Target
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 const AUDIT_STATUS_OPTIONS = [
@@ -22,110 +34,110 @@ const AUDIT_STATUS_OPTIONS = [
   { value: 'completed', label: 'Completed' },
 ] as const;
 
+function statusVariant(status: string) {
+  if (status === 'completed') return 'success' as const;
+  if (status === 'in_progress') return 'info' as const;
+  return 'warning' as const;
+}
+
 export default function CisoProjectsPage() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<'all' | 'needed' | 'in_progress' | 'completed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | ProjectAuditStatus>('all');
   const queryFilter = statusFilter === 'all' ? undefined : statusFilter;
-  const { data: projects = [], isLoading } = useCisoAuditProjects(queryFilter);
-  const updateStatus = useUpdateAuditProjectStatus();
+  const { data: audits = [], isLoading } = useCisoAuditProjects(queryFilter);
+  const createAudit = useCreateProjectAudit();
+  const updateAudit = useUpdateProjectAudit();
+  const deleteAudit = useDeleteProjectAudit();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<CisoAuditProject | null>(null);
+  const [deleting, setDeleting] = useState<CisoAuditProject | null>(null);
 
-  const neededCount = projects.filter(p => p.audit_status === 'needed').length;
-  const inProgressCount = projects.filter(p => p.audit_status === 'in_progress').length;
-  const completedCount = projects.filter(p => p.audit_status === 'completed').length;
-  const criticalCount = projects.filter(p => (p.priority === 'critical' || p.priority === 'high') && p.audit_status === 'needed').length;
+  const neededCount = audits.filter((p) => p.status === 'needed').length;
+  const inProgressCount = audits.filter((p) => p.status === 'in_progress').length;
+  const completedCount = audits.filter((p) => p.status === 'completed').length;
 
   const columns: Column<CisoAuditProject>[] = useMemo(
     () => [
-      { 
-        key: 'name', 
-        header: 'Project', 
+      {
+        key: 'name',
+        header: 'Project Audit',
         sortable: true,
         render: (row) => (
           <div>
             <p className="font-medium text-ink">{row.name}</p>
-            <p className="text-sm text-ink-muted mt-1">
-              Priority: {row.priority} • Status: {row.status}
-            </p>
+            {row.description && (
+              <p className="text-sm text-ink-muted line-clamp-1 mt-1">{row.description}</p>
+            )}
           </div>
         ),
       },
       {
         key: 'status',
-        header: 'Project Status',
+        header: 'Audit Status',
+        sortable: true,
         render: (row) => (
-          <Badge variant={
-            row.status === 'active' ? 'success' :
-            row.status === 'planning' ? 'info' : 'default'
-          }>
-            {row.status}
-          </Badge>
+          <Badge variant={statusVariant(row.status)}>{row.status.replace('_', ' ')}</Badge>
         ),
       },
       {
-        key: 'audit_status',
-        header: 'Audit Status',
-        sortable: true,
-        render: (row) => {
-          const variant = 
-            row.audit_status === 'completed' ? 'success' : 
-            row.audit_status === 'in_progress' ? 'info' : 'warning';
-          return <Badge variant={variant}>{row.audit_status.replace('_', ' ')}</Badge>;
-        },
-      },
-      {
-        key: 'priority',
-        header: 'Priority',
+        key: 'task_count',
+        header: 'Tasks',
         render: (row) => (
-          <Badge variant={
-            row.priority === 'critical' ? 'error' : 
-            row.priority === 'high' ? 'warning' : 'default'
-          }>
-            {row.priority}
-          </Badge>
+          <span className="text-sm text-ink-secondary">{row.task_count ?? 0}</span>
         ),
       },
       {
         key: 'action',
-        header: 'Update Status',
+        header: 'Actions',
         render: (row) => (
-          <Select
-            value={row.audit_status}
-            onChange={(e) => {
-              e.stopPropagation();
-              updateStatus.mutate({
-                id: row.id,
-                audit_status: e.target.value as 'needed' | 'in_progress' | 'completed',
-              });
-            }}
-            className="min-w-[140px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {AUDIT_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEditing(row);
+                setFormOpen(true);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1" />
+              Edit
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setDeleting(row)}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete
+            </Button>
+          </div>
         ),
       },
     ],
-    [updateStatus],
+    [],
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Project Security Audits"
-        description="Track and manage security audits for all projects"
+        title="Project Audits"
+        description="Create and manage security audits. Each audit can have its own tasks."
+        actions={
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Project Audit
+          </Button>
+        }
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="p-6 bg-surface border border-border">
           <div className="flex items-center gap-3 mb-2">
-            <Target className="h-4 w-4 text-brand" />
-            <span className="text-sm text-ink-muted">Total Projects</span>
+            <ShieldCheck className="h-4 w-4 text-brand" />
+            <span className="text-sm text-ink-muted">Total Audits</span>
           </div>
-          <p className="text-3xl font-bold text-ink">{projects.length}</p>
+          <p className="text-3xl font-bold text-ink">{audits.length}</p>
         </Card>
         <Card className="p-6 bg-surface border border-border">
           <div className="flex items-center gap-3 mb-2">
@@ -133,9 +145,6 @@ export default function CisoProjectsPage() {
             <span className="text-sm text-ink-muted">Audit Needed</span>
           </div>
           <p className="text-3xl font-bold text-ink">{neededCount}</p>
-          {criticalCount > 0 && (
-            <p className="text-xs text-danger mt-1">{criticalCount} critical</p>
-          )}
         </Card>
         <Card className="p-6 bg-surface border border-border">
           <div className="flex items-center gap-3 mb-2">
@@ -159,7 +168,7 @@ export default function CisoProjectsPage() {
           <div className="w-56">
             <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'needed' | 'in_progress' | 'completed')}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectAuditStatus)}
             >
               <option value="all">All audit statuses</option>
               {AUDIT_STATUS_OPTIONS.map((option) => (
@@ -173,16 +182,58 @@ export default function CisoProjectsPage() {
 
         <DataTable
           columns={columns}
-          data={projects}
+          data={audits}
           isLoading={isLoading}
-          searchKeys={['name', 'title', 'description', 'status', 'priority', 'audit_status']}
+          searchKeys={['name', 'description', 'status']}
           pageSize={10}
           getRowId={(row) => row.id}
-          emptyTitle="No audit projects found"
-          emptyDescription="Projects with required audits will appear here."
+          emptyTitle="No project audits yet"
+          emptyDescription="Create a project audit to start tracking security work and related tasks."
           onRowClick={(row) => router.push(`/ciso/projects/${row.id}`)}
         />
       </Card>
+
+      {formOpen && (
+        <ProjectAuditFormModal
+          key={editing?.id || 'create'}
+          isOpen={formOpen}
+          title={editing ? 'Edit Project Audit' : 'Create Project Audit'}
+          initial={
+            editing
+              ? { name: editing.name, description: editing.description || '', status: editing.status }
+              : undefined
+          }
+          loading={createAudit.isPending || updateAudit.isPending}
+          onClose={() => {
+            setFormOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={async (payload) => {
+            if (editing) {
+              await updateAudit.mutateAsync({ id: editing.id, ...payload });
+            } else {
+              await createAudit.mutateAsync(payload);
+            }
+            setFormOpen(false);
+            setEditing(null);
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleting)}
+        title="Delete project audit"
+        description={`Delete "${deleting?.name}" and all of its audit tasks? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteAudit.isPending}
+        onCancel={() => setDeleting(null)}
+        onConfirm={async () => {
+          if (!deleting) return;
+          await deleteAudit.mutateAsync(deleting.id);
+          setDeleting(null);
+        }}
+      />
     </div>
   );
 }
