@@ -218,6 +218,11 @@ export class ProjectsService {
     this.assertCanView(project, actor);
 
     const name = project.name;
+
+    // Delete related tasks and sprints first to avoid FK constraint violations
+    await this.tasksRepository.delete({ project_id: id });
+    await this.sprintsRepository.delete({ project_id: id });
+
     await this.projectsRepository.remove(project);
     await this.activityLogService.log({
       org_id,
