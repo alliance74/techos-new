@@ -163,31 +163,20 @@ export default function CisoProjectsPage() {
       </div>
 
       <Card className="p-6 bg-surface border border-border">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-ink">All Project Audits</h2>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="w-full sm:w-56">
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectAuditStatus)}
-              >
-                <option value="all">All audit statuses</option>
-                {AUDIT_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setFormOpen(true);
-              }}
+          <div className="w-56">
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectAuditStatus)}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Project Audit
-            </Button>
+              <option value="all">All audit statuses</option>
+              {AUDIT_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
           </div>
         </div>
 
