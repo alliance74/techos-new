@@ -53,6 +53,7 @@ interface DataTableProps<T> {
   isLoading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: ReactNode | { label: string; onClick: () => void };
   getRowId?: (row: T) => string | number;
   className?: string;
 }
@@ -84,6 +85,7 @@ export function DataTable<T>({
   isLoading = false,
   emptyTitle = 'No results found',
   emptyDescription = 'Try adjusting your search or filters.',
+  emptyAction,
   getRowId,
   className,
 }: DataTableProps<T>) {
@@ -321,7 +323,7 @@ export function DataTable<T>({
 
       {sorted.length === 0 ? (
         <div className="border border-border rounded-lg bg-surface">
-          <EmptyState title={emptyTitle} description={emptyDescription} />
+          <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
         </div>
       ) : (
         <>

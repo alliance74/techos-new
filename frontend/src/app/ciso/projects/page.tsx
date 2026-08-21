@@ -163,20 +163,31 @@ export default function CisoProjectsPage() {
       </div>
 
       <Card className="p-6 bg-surface border border-border">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <h2 className="text-lg font-semibold text-ink">All Project Audits</h2>
-          <div className="w-56">
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectAuditStatus)}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="w-full sm:w-56">
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectAuditStatus)}
+              >
+                <option value="all">All audit statuses</option>
+                {AUDIT_STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
             >
-              <option value="all">All audit statuses</option>
-              {AUDIT_STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Project Audit
+            </Button>
           </div>
         </div>
 
@@ -188,7 +199,14 @@ export default function CisoProjectsPage() {
           pageSize={10}
           getRowId={(row) => row.id}
           emptyTitle="No project audits yet"
-          emptyDescription="Create a project audit to start tracking security work and related tasks."
+          emptyDescription="Create a project audit with a name and description, then attach audit tasks to it."
+          emptyAction={{
+            label: 'Create Project Audit',
+            onClick: () => {
+              setEditing(null);
+              setFormOpen(true);
+            },
+          }}
           onRowClick={(row) => router.push(`/ciso/projects/${row.id}`)}
         />
       </Card>

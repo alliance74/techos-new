@@ -182,17 +182,28 @@ export default function CisoTasksPage() {
       </div>
 
       <Card className="p-6 bg-surface border border-border">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <h2 className="text-lg font-semibold text-ink">All Audit Tasks</h2>
-          <div className="w-52">
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'finished' | 'not_finished')}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="w-full sm:w-52">
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'finished' | 'not_finished')}
+              >
+                <option value="all">All tasks</option>
+                <option value="not_finished">Not finished</option>
+                <option value="finished">Finished</option>
+              </Select>
+            </div>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
             >
-              <option value="all">All tasks</option>
-              <option value="not_finished">Not finished</option>
-              <option value="finished">Finished</option>
-            </Select>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Audit Task
+            </Button>
           </div>
         </div>
 
@@ -204,7 +215,14 @@ export default function CisoTasksPage() {
           pageSize={10}
           getRowId={(row) => row.id}
           emptyTitle="No audit tasks found"
-          emptyDescription="Create a project audit, then add tasks and select which audit they belong to."
+          emptyDescription="Create a task and select which project audit it belongs to."
+          emptyAction={{
+            label: 'Create Audit Task',
+            onClick: () => {
+              setEditing(null);
+              setFormOpen(true);
+            },
+          }}
           onRowClick={(row) => router.push(`/ciso/tasks/${row.id}`)}
         />
       </Card>
