@@ -33,6 +33,7 @@ import {
   BookOpen,
   MessageCircle,
   ShieldCheck,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 import { UserRole } from '@/types/roles';
@@ -155,6 +156,7 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
           { name: 'Architecture', href: '/cto/architecture', icon: Boxes },
           { name: 'Documentation', href: '/cto/documentation', icon: FileText },
           { name: 'Infrastructure', href: '/cto/infrastructure', icon: Server },
+          { name: 'Observability', href: '/cto/observability', icon: Activity },
         ],
       },
       {

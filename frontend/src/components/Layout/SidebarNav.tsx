@@ -86,9 +86,25 @@ export function useSidebarGroups(groups: NavGroup[], basePath: string, storageKe
     }
   }, [openMap, storageKey, hydrated]);
 
-  const toggleGroup = useCallback((id: string) => {
-    setOpenMap((prev) => ({ ...prev, [id]: !prev[id] }));
-  }, []);
+  const toggleGroup = useCallback(
+    (id: string) => {
+      setOpenMap((prev) => {
+        const isCurrentlyOpen = prev[id];
+        // Build a new map: close all groups, then open the clicked one (unless it was already open)
+        const next: Record<string, boolean> = {};
+        for (const group of groups) {
+          // Keep active groups open so navigation always shows the current location
+          const active = groupContainsActive(group, pathname, basePath);
+          next[group.id] = active;
+        }
+        if (!isCurrentlyOpen) {
+          next[id] = true; // open the clicked group
+        }
+        return next;
+      });
+    },
+    [groups, pathname, basePath],
+  );
 
   return { openMap, toggleGroup, pathname };
 }
