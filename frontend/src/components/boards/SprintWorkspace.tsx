@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
-import { Flag, Plus, Target, Timer } from 'lucide-react';
+import { useMemo, useState, useEffect, type Dispatch, type SetStateAction } from 'react';
+import { Flag, Plus, Target, Timer, Edit2, Trash2, ArrowRightLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { type MockRecord } from '@/mocks';
 import { SPRINT_COLUMNS } from '@/mocks/boards';
@@ -11,6 +11,8 @@ import {
   useCompleteSprint,
   useRemoveTaskFromSprint,
   useStartSprint,
+  useUpdateSprint,
+  useDeleteSprint,
 } from '@/hooks/useSprints';
 import { Badge } from '@/components/UI/Badge';
 import { Button } from '@/components/UI/Button';
@@ -50,11 +52,16 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
   const addToSprint = useAddTaskToSprint();
   const removeFromSprint = useRemoveTaskFromSprint();
   const createSprint = useCreateEntity('sprints');
+  const updateSprint = useUpdateSprint();
+  const deleteSprint = useDeleteSprint();
 
   const activeSprint = sprints.find((s) => /active/i.test(String(s.status))) || sprints[0];
   const [selectedId, setSelectedId] = useState<string>('');
   const selected = sprints.find((s) => s.id === (selectedId || activeSprint?.id)) || activeSprint;
+
   const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
   const [sprintForm, setSprintForm] = useState({
     title: '',
     description: '',
@@ -63,12 +70,35 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
     end_date: '',
   });
 
+  const [editForm, setEditForm] = useState({
+    name: '',
+    goal: '',
+    project_id: '',
+    start_date: '',
+    end_date: '',
+    status: 'planned',
+  });
+
+  useEffect(() => {
+    if (selected) {
+      setEditForm({
+        name: selected.name || selected.title || '',
+        goal: selected.goal || selected.description || '',
+        project_id: selected.project_id || '',
+        start_date: selected.start_date || selected.startDate || '',
+        end_date: selected.end_date || selected.dueDate || '',
+        status: selected.status || 'planned',
+      });
+    }
+  }, [selected]);
+
   const defaultProjectId =
     selected?.project_id ||
     (projects as any[]).find((p) => /active/i.test(String(p.status)))?.id ||
     (projects as any[])[0]?.id ||
     '';
 
+  // Strictly filter tasks that belong ONLY to this selected sprint
   const sprintTasks = useMemo(() => {
     if (!selected) return [] as MockRecord[];
     return (tasks as MockRecord[]).filter((task) => {
@@ -77,6 +107,7 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
     });
   }, [selected, tasks]);
 
+  // Backlog: tasks NOT assigned to ANY sprint
   const backlog = useMemo(() => {
     return (tasks as MockRecord[]).filter((task) => {
       const raw = task as MockRecord & { sprint_id?: string | null };
@@ -120,6 +151,44 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
       start_date: new Date().toISOString().slice(0, 10),
       end_date: '',
     });
+    refresh();
+  };
+
+  const onUpdateSprint = async () => {
+    if (!selected) return;
+    if (!editForm.name.trim()) {
+      toast.error('Sprint name is required');
+      return;
+    }
+    await updateSprint.mutateAsync({
+      id: selected.id,
+      data: {
+        name: editForm.name.trim(),
+        goal: editForm.goal,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date,
+        status: editForm.status as 'planned' | 'active' | 'completed',
+        ...(editForm.project_id ? { project_id: editForm.project_id } : {}),
+      },
+    });
+    setEditOpen(false);
+    refresh();
+  };
+
+  const onDeleteSprint = async () => {
+    if (!selected) return;
+    const confirmed = window.confirm(
+      `Delete sprint "${selected.title || selected.name}"? All tasks inside this sprint will be safely returned to the backlog.`,
+    );
+    if (!confirmed) return;
+
+    await deleteSprint.mutateAsync(selected.id);
+    const remaining = sprints.filter((s) => s.id !== selected.id);
+    if (remaining.length > 0) {
+      setSelectedId(remaining[0].id);
+    } else {
+      setSelectedId('');
+    }
     refresh();
   };
 
@@ -175,7 +244,7 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
     <div className="space-y-5">
       <PageHeader
         title="Sprints"
-        description="Trello-style sprint board — backlog, assignees, and drag-and-drop workflow."
+        description="Independent sprint boards — backlog, assignees, drag-and-drop workflow."
         breadcrumbs={breadcrumbs}
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -186,13 +255,20 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
             >
               {sprints.map((sprint) => (
                 <option key={sprint.id} value={sprint.id}>
-                  {sprint.title}
+                  {sprint.title || sprint.name}
                 </option>
               ))}
             </select>
             <Button size="sm" variant="secondary" onClick={() => setCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               New sprint
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+              <Edit2 className="mr-1.5 h-3.5 w-3.5" />
+              Edit Sprint
+            </Button>
+            <Button size="sm" variant="danger" onClick={onDeleteSprint} disabled={deleteSprint.isPending}>
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
             {!isDone && (
               <Button
@@ -219,15 +295,15 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-ink">{selected.title}</h2>
+                <h2 className="text-lg font-semibold text-ink">{selected.title || selected.name}</h2>
                 <Badge variant={selected.statusVariant}>{selected.status}</Badge>
               </div>
-              <p className="mt-1 text-sm text-ink-muted">{selected.description}</p>
+              <p className="mt-1 text-sm text-ink-muted">{selected.goal || selected.description || 'No goal set'}</p>
             </div>
             <div className="flex items-center gap-2 text-sm text-ink-secondary">
               <Timer className="h-4 w-4 text-brand" />
-              {selected.startDate ? formatDate(selected.startDate) : '—'} →{' '}
-              {selected.dueDate ? formatDate(selected.dueDate) : '—'}
+              {selected.startDate || selected.start_date ? formatDate(selected.startDate || selected.start_date) : '—'} →{' '}
+              {selected.dueDate || selected.end_date ? formatDate(selected.dueDate || selected.end_date) : '—'}
             </div>
           </div>
           <div className="mt-4">
@@ -240,12 +316,17 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
         </Card>
 
         <Card className="space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-            <Target className="h-4 w-4 text-brand" />
-            Sprint goal
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <Target className="h-4 w-4 text-brand" />
+              Sprint Goal
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setEditOpen(true)} className="p-1 h-auto text-xs">
+              <Edit2 className="h-3 w-3 mr-1" /> Edit
+            </Button>
           </div>
           <p className="text-sm leading-relaxed text-ink-secondary">
-            {selected.description || 'Ship committed work and keep the board healthy.'}
+            {selected.goal || selected.description || 'Ship committed work and keep the board healthy.'}
           </p>
           <div className="flex items-center gap-2 border-t border-border pt-2 text-xs text-ink-muted">
             <Flag className="h-3.5 w-3.5" />
@@ -256,8 +337,8 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ink">{selected.title} board</h3>
-          <p className="text-xs text-ink-muted">Drag cards between columns · assign people on open</p>
+          <h3 className="text-sm font-semibold text-ink">{selected.title || selected.name} Board</h3>
+          <p className="text-xs text-ink-muted">Drag cards between columns · tasks stay strictly in this sprint</p>
         </div>
         <KanbanBoard
           key={selected.id}
@@ -274,8 +355,8 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
       <Card>
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-ink">Backlog</h3>
-            <p className="text-xs text-ink-muted">Unassigned to any sprint — pull into this sprint</p>
+            <h3 className="text-sm font-semibold text-ink">Unassigned Backlog</h3>
+            <p className="text-xs text-ink-muted">Tasks not assigned to any sprint — move into "{selected.title || selected.name}"</p>
           </div>
           <Badge size="sm">{backlog.length}</Badge>
         </div>
@@ -303,14 +384,14 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
                       .then(refresh)
                   }
                 >
-                  Add
+                  Add to sprint
                 </Button>
               </div>
             </div>
           ))}
           {backlog.length === 0 && (
             <p className="col-span-full text-sm text-ink-muted">
-              Backlog is empty — create cards on the Tasks board or add new ones on this sprint.
+              Backlog is empty — create new tasks or pull from other boards.
             </p>
           )}
         </div>
@@ -318,7 +399,7 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
         {sprintTasks.length > 0 && (
           <div className="mt-6 border-t border-border pt-4">
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-              Return to backlog
+              Move tasks out of sprint (Return to Backlog)
             </h4>
             <div className="flex flex-wrap gap-2">
               {sprintTasks.slice(0, 12).map((item) => (
@@ -341,7 +422,8 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
         )}
       </Card>
 
-      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="New sprint" size="lg">
+      {/* CREATE SPRINT MODAL */}
+      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="New Sprint" size="lg">
         <SprintCreateFields
           form={sprintForm}
           setForm={setSprintForm}
@@ -350,6 +432,74 @@ export function SprintWorkspace({ breadcrumbs }: SprintWorkspaceProps) {
           onCancel={() => setCreateOpen(false)}
           onSave={() => void onCreateSprint()}
         />
+      </Modal>
+
+      {/* EDIT SPRINT MODAL */}
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title={`Edit Sprint: ${selected.title || selected.name}`} size="lg">
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <Input
+              label="Sprint Name"
+              required
+              value={editForm.name}
+              onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+            />
+            <TextArea
+              label="Sprint Goal"
+              rows={3}
+              value={editForm.goal}
+              onChange={(e) => setEditForm((f) => ({ ...f, goal: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Select
+              label="Status"
+              value={editForm.status}
+              onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
+            >
+              <option value="planned">Planned</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+            </Select>
+            <Select
+              label="Associated Project"
+              value={editForm.project_id}
+              onChange={(e) => setEditForm((f) => ({ ...f, project_id: e.target.value }))}
+            >
+              <option value="">Select Project</option>
+              {(projects as any[]).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title || p.name}
+                </option>
+              ))}
+            </Select>
+            <Input
+              label="Start Date"
+              type="date"
+              value={editForm.start_date}
+              onChange={(e) => setEditForm((f) => ({ ...f, start_date: e.target.value }))}
+            />
+            <Input
+              label="End Date"
+              type="date"
+              value={editForm.end_date}
+              onChange={(e) => setEditForm((f) => ({ ...f, end_date: e.target.value }))}
+            />
+          </div>
+          <div className="flex items-center justify-between border-t border-border pt-4">
+            <Button variant="danger" onClick={onDeleteSprint} disabled={deleteSprint.isPending}>
+              <Trash2 className="mr-1.5 h-4 w-4" /> Delete Sprint
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button loading={updateSprint.isPending} onClick={() => void onUpdateSprint()}>
+                Save Sprint
+              </Button>
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );
@@ -385,16 +535,16 @@ function SprintCreateFields({
   return (
     <div className="space-y-5">
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Sprint</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Sprint Info</p>
         <Input
-          label="Name"
+          label="Sprint Name"
           required
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          placeholder="Sprint 12"
+          placeholder="e.g. Sprint 24 - Dashboard Overhaul"
         />
         <TextArea
-          label="Goal"
+          label="Sprint Goal"
           rows={3}
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -402,9 +552,9 @@ function SprintCreateFields({
         />
       </div>
       <div className="space-y-3 rounded-xl border border-border bg-surface-hover/50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Scope & schedule</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Scope & Schedule</p>
         <Select
-          label="Product / project"
+          label="Product / Project"
           required
           value={form.project_id}
           onChange={(e) => setForm((f) => ({ ...f, project_id: e.target.value }))}
@@ -418,13 +568,13 @@ function SprintCreateFields({
         </Select>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
-            label="Start"
+            label="Start Date"
             type="date"
             value={form.start_date}
             onChange={(e) => setForm((f) => ({ ...f, start_date: e.target.value }))}
           />
           <Input
-            label="End"
+            label="End Date"
             type="date"
             value={form.end_date}
             onChange={(e) => setForm((f) => ({ ...f, end_date: e.target.value }))}
@@ -436,7 +586,7 @@ function SprintCreateFields({
           Cancel
         </Button>
         <Button loading={loading} onClick={onSave}>
-          Create sprint
+          Create Sprint
         </Button>
       </div>
     </div>

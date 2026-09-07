@@ -1,7 +1,15 @@
 'use client';
 
-import { ModuleWorkspace } from '@/components/pages/ModuleWorkspace';
+import { SprintWorkspace } from '@/components/boards/SprintWorkspace';
 
 export default function Page() {
-  return <ModuleWorkspace />;
+  return (
+    <SprintWorkspace
+      breadcrumbs={[
+        { label: 'CTO Workspace', href: '/cto' },
+        { label: 'Sprints', href: '/cto/sprints' },
+        { label: 'Sprint Detail' },
+      ]}
+    />
+  );
 }

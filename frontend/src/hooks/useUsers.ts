@@ -40,6 +40,23 @@ export function useUpdateUser() {
   });
 }
 
+export function useResetUserPassword() {
+  return useMutation({
+    mutationFn: async ({ id, password }: { id: string; password: string }) => {
+      const response = await api.post(`/users/${id}/reset-password`, { password });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Password reset successfully');
+    },
+    onError: (error: any) => {
+      const raw = error?.response?.data?.message;
+      const message = Array.isArray(raw) ? raw[0] : raw;
+      toast.error(message || 'Failed to reset password');
+    },
+  });
+}
+
 export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({

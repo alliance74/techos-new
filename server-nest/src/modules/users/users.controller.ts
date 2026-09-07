@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, UseGuards, Post } from '@nestjs/common';
+import { Controller, Get, Put, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -36,8 +36,19 @@ export class UsersController {
     return this.usersService.findOne(id, user.org_id);
   }
 
+  /** CEO can update any user record (name, role, status, department, etc.) */
   @Put(':id')
   update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
     return this.usersService.update(id, user.org_id, user, updateData);
+  }
+
+  /** CEO can force-reset any user's password without knowing the old one */
+  @Post(':id/reset-password')
+  resetPassword(
+    @CurrentUser() actor: any,
+    @Param('id') id: string,
+    @Body() body: { password: string },
+  ) {
+    return this.usersService.resetPasswordByCeo(id, actor.org_id, actor, body.password);
   }
 }

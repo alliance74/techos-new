@@ -14,6 +14,10 @@ import {
   FileText,
   Shield,
   Clock,
+  KeyRound,
+  Eye,
+  EyeOff,
+  CheckCircle2,
 } from 'lucide-react';
 import { Card } from '@/components/UI/Card';
 import { Badge } from '@/components/UI/Badge';
@@ -24,6 +28,9 @@ import { Modal } from '@/components/UI/Modal';
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner';
 import { EmptyState } from '@/components/UI/EmptyState';
 import { useDeleteEmployee, useEmployee, useEmployeeActivity, useUpdateEmployee } from '@/hooks/useHR';
+import { useUpdateUser, useResetUserPassword } from '@/hooks/useUsers';
+import { UserRole } from '@/types/roles';
+import toast from 'react-hot-toast';
 
 function formatRoleLabel(role?: string | null) {
   if (!role) return '';
@@ -45,6 +52,16 @@ function formatRelativeDate(value?: string | Date) {
   return date.toLocaleDateString();
 }
 
+const ROLE_OPTIONS = [
+  { value: UserRole.CEO, label: 'CEO' },
+  { value: UserRole.CTO, label: 'CTO' },
+  { value: UserRole.CISO, label: 'CISO' },
+  { value: UserRole.FINANCE, label: 'Finance' },
+  { value: UserRole.SOFTWARE_ENGINEER, label: 'Software Engineer' },
+  { value: UserRole.UI_UX_DESIGNER, label: 'UI/UX Designer' },
+  { value: UserRole.CUSTOMER_SUPPORT, label: 'Customer Support' },
+];
+
 type ActivityItem = {
   id: string;
   title: string;
@@ -61,8 +78,22 @@ export default function EmployeeDetailPage() {
   const activityQuery = useEmployeeActivity(id);
   const updateEmployee = useUpdateEmployee();
   const deleteEmployee = useDeleteEmployee();
+  const updateUser = useUpdateUser();
+  const resetPassword = useResetUserPassword();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Editable user fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<UserRole>(UserRole.SOFTWARE_ENGINEER);
+  
+  // Editable employee fields
+  const [department, setDepartment] = useState('');
   const [position, setPosition] = useState('');
   const [employmentType, setEmploymentType] = useState('full-time');
   const [salary, setSalary] = useState('');
@@ -71,6 +102,12 @@ export default function EmployeeDetailPage() {
 
   useEffect(() => {
     if (!employee) return;
+    setFirstName(employee.user?.first_name || '');
+    setLastName(employee.user?.last_name || '');
+    setEmail(employee.user?.email || '');
+    setRole((employee.user?.role as UserRole) || UserRole.SOFTWARE_ENGINEER);
+
+    setDepartment((employee as any).department || '');
     setPosition(employee.position || '');
     setEmploymentType(employee.employment_type || 'full-time');
     setSalary(employee.salary != null ? String(employee.salary) : '');
@@ -154,17 +191,59 @@ export default function EmployeeDetailPage() {
 
   const handleSave = async () => {
     if (!employee) return;
-    await updateEmployee.mutateAsync({
-      id: employee.id,
-      data: {
-        position: position.trim() || employee.position,
-        employment_type: employmentType,
-        status: status as 'active' | 'on_leave' | 'terminated',
-        start_date: startDate || employee.hire_date,
-        ...(salary.trim() ? { salary: Number(salary) } : {}),
-      },
-    });
-    setEditOpen(false);
+    try {
+      // 1. Update user account details if user exists
+      if (employee.user?.id) {
+        await updateUser.mutateAsync({
+          id: employee.user.id,
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            email: email.trim(),
+            role,
+            status,
+          },
+        });
+      }
+
+      // 2. Update employee profile details
+      await updateEmployee.mutateAsync({
+        id: employee.id,
+        data: {
+          position: position.trim() || employee.position,
+          employment_type: employmentType,
+          status: status as 'active' | 'on_leave' | 'terminated',
+          start_date: startDate || employee.hire_date,
+          ...(salary.trim() ? { salary: Number(salary) } : {}),
+          ...(department.trim() ? { department: department.trim() } : {}),
+        },
+      });
+
+      setEditOpen(false);
+    } catch (err: any) {
+      // Errors handled by mutation toasts
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!employee?.user?.id) {
+      toast.error('No associated user account found for this employee');
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    try {
+      await resetPassword.mutateAsync({
+        id: employee.user.id,
+        password: newPassword,
+      });
+      setResetOpen(false);
+      setNewPassword('');
+    } catch (err: any) {
+      // Handled by hook
+    }
   };
 
   const handleDelete = async () => {
@@ -209,6 +288,8 @@ export default function EmployeeDetailPage() {
       </div>
     );
   }
+
+  const isSaving = updateEmployee.isPending || updateUser.isPending;
 
   return (
     <div className="space-y-6">
@@ -285,20 +366,33 @@ export default function EmployeeDetailPage() {
             )}
           </div>
 
-          <div className="flex gap-2 mt-6 pt-4 border-t border-border">
+          <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-border">
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setEditOpen(true)}
+              >
+                <Edit className="h-4 w-4 mr-1.5" /> Edit Record
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDelete}
+                disabled={deleteEmployee.isPending}
+                title="Delete Employee"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
             <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => setEditOpen(true)}
+              variant="outline"
+              className="w-full text-brand border-brand/30 hover:bg-brand/10"
+              onClick={() => {
+                setNewPassword('');
+                setResetOpen(true);
+              }}
             >
-              <Edit className="h-4 w-4" /> Edit
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              disabled={deleteEmployee.isPending}
-            >
-              <Trash2 className="h-4 w-4" />
+              <KeyRound className="h-4 w-4 mr-1.5" /> Reset Password
             </Button>
           </div>
         </Card>
@@ -306,11 +400,19 @@ export default function EmployeeDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6 bg-surface border border-border">
             <h3 className="font-semibold text-ink mb-4 flex items-center gap-2">
-              <Briefcase className="h-5 w-5" /> Employment Details
+              <Briefcase className="h-5 w-5" /> Employment & User Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 bg-bg-muted border border-border rounded-lg">
-                <p className="text-xs text-ink-muted mb-1">Role</p>
+                <p className="text-xs text-ink-muted mb-1">Full Name</p>
+                <p className="text-ink font-medium">{displayName}</p>
+              </div>
+              <div className="p-4 bg-bg-muted border border-border rounded-lg">
+                <p className="text-xs text-ink-muted mb-1">Email</p>
+                <p className="text-ink font-medium">{employee.user?.email || '—'}</p>
+              </div>
+              <div className="p-4 bg-bg-muted border border-border rounded-lg">
+                <p className="text-xs text-ink-muted mb-1">System Role</p>
                 <p className="text-ink font-medium capitalize">
                   {formatRoleLabel(employee.user?.role) || '—'}
                 </p>
@@ -384,56 +486,146 @@ export default function EmployeeDetailPage() {
         </div>
       </div>
 
-      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit employee" size="md">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-ink-secondary mb-1">Position</label>
-            <Input value={position} onChange={(e) => setPosition(e.target.value)} />
+      {/* EDIT USER & EMPLOYEE MODAL */}
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit Employee Record" size="lg">
+        <div className="space-y-5">
+          <div className="border-b border-border pb-3">
+            <h4 className="text-xs font-bold uppercase text-ink-muted tracking-wider mb-3">Account Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">First Name</label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Last Name</label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Email Address</label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">System Role</label>
+                <Select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+                  {ROLE_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
           </div>
+
           <div>
-            <label className="block text-sm text-ink-secondary mb-1">Employment type</label>
-            <Select
-              value={employmentType}
-              onChange={(e) => setEmploymentType(e.target.value)}
+            <h4 className="text-xs font-bold uppercase text-ink-muted tracking-wider mb-3">Employment Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Position / Title</label>
+                <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. Senior Frontend Engineer" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Employment Type</label>
+                <Select value={employmentType} onChange={(e) => setEmploymentType(e.target.value)}>
+                  <option value="full-time">Full time</option>
+                  <option value="part-time">Part time</option>
+                  <option value="contract">Contract</option>
+                  <option value="intern">Intern</option>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Account Status</label>
+                <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="active">Active</option>
+                  <option value="on_leave">On leave</option>
+                  <option value="terminated">Terminated</option>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Hire Date</label>
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-ink-secondary mb-1">Annual Salary ($)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={salary}
+                  onChange={(e) => setSalary(e.target.value)}
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-border pt-4">
+            <Button
+              variant="outline"
+              type="button"
+              className="text-brand border-brand/30"
+              onClick={() => {
+                setEditOpen(false);
+                setNewPassword('');
+                setResetOpen(true);
+              }}
             >
-              <option value="full-time">Full time</option>
-              <option value="part-time">Part time</option>
-              <option value="contract">Contract</option>
-              <option value="intern">Intern</option>
-            </Select>
+              <KeyRound className="h-4 w-4 mr-1.5" /> Reset Password
+            </Button>
+
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Saving…' : 'Save Changes'}
+              </Button>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm text-ink-secondary mb-1">Status</label>
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="active">Active</option>
-              <option value="on_leave">On leave</option>
-              <option value="terminated">Terminated</option>
-            </Select>
-          </div>
-          <div>
-            <label className="block text-sm text-ink-secondary mb-1">Hire date</label>
+        </div>
+      </Modal>
+
+      {/* RESET PASSWORD MODAL */}
+      <Modal isOpen={resetOpen} onClose={() => setResetOpen(false)} title={`Reset Password for ${displayName}`} size="md">
+        <div className="space-y-4">
+          <p className="text-sm text-ink-muted">
+            As CEO, you can force-set a new password for this account. The user will be able to log in with this new password immediately.
+          </p>
+
+          <div className="relative">
             <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              type={showPassword ? 'text' : 'password'}
+              label="New Password"
+              placeholder="Enter new password (min 6 chars)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-8 text-ink-muted hover:text-ink"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
-          <div>
-            <label className="block text-sm text-ink-secondary mb-1">Salary (annual)</label>
-            <Input
-              type="number"
-              min="0"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              placeholder="Optional"
-            />
-          </div>
+
+          {newPassword && (
+            <div className="p-3 bg-bg-muted border border-border rounded-lg space-y-1.5 text-xs text-ink-secondary">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className={`h-3.5 w-3.5 ${newPassword.length >= 6 ? 'text-green-500' : 'text-gray-400'}`} />
+                <span>At least 6 characters ({newPassword.length}/6)</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setEditOpen(false)}>
+            <Button variant="secondary" onClick={() => setResetOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={updateEmployee.isPending}>
-              {updateEmployee.isPending ? 'Saving…' : 'Save changes'}
+            <Button
+              onClick={handleResetPassword}
+              disabled={resetPassword.isPending || newPassword.length < 6}
+            >
+              {resetPassword.isPending ? 'Updating Password…' : 'Update Password'}
             </Button>
           </div>
         </div>

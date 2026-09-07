@@ -150,6 +150,19 @@ export class UsersService {
     return { success: true, message: 'Password updated successfully' };
   }
 
+  async resetPasswordByCeo(id: string, org_id: string, actor: any, newPassword: string) {
+    if (actor.role !== UserRole.CEO) {
+      throw new ForbiddenException('Only CEO can reset other users\' passwords');
+    }
+    const user = await this.usersRepository.findOne({ where: { id, org_id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.password_hash = await bcrypt.hash(newPassword, 10);
+    await this.usersRepository.save(user);
+    return { success: true, message: 'Password reset successfully' };
+  }
+
   private safeUser(user: User) {
     const { password_hash, two_factor_secret, ...safe } = user as any;
     return safe;

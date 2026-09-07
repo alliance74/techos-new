@@ -104,15 +104,30 @@ export class SprintsService {
     if (updateSprintDto?.project_id && updateSprintDto.project_id !== sprint.data.project_id) {
       await this.assertProjectAccess(updateSprintDto.project_id, org_id, user);
     }
-    await this.sprintsRepository.update(id, updateSprintDto);
+
+    const payload: any = {};
+    if (updateSprintDto.name !== undefined || updateSprintDto.title !== undefined) {
+      payload.name = updateSprintDto.name ?? updateSprintDto.title;
+    }
+    if (updateSprintDto.goal !== undefined || updateSprintDto.description !== undefined) {
+      payload.goal = updateSprintDto.goal ?? updateSprintDto.description;
+    }
+    if (updateSprintDto.start_date !== undefined) payload.start_date = updateSprintDto.start_date;
+    if (updateSprintDto.end_date !== undefined) payload.end_date = updateSprintDto.end_date;
+    if (updateSprintDto.status !== undefined) payload.status = updateSprintDto.status;
+    if (updateSprintDto.project_id !== undefined) payload.project_id = updateSprintDto.project_id;
+
+    await this.sprintsRepository.update(id, payload);
     const updated = await this.sprintsRepository.findOne({ where: { id } });
     return { success: true, data: updated };
   }
 
   async remove(id: string, org_id: string, user?: ProjectViewer) {
     await this.findOne(id, org_id, user);
+    // Unassign tasks from this sprint before deleting, returning them to backlog
+    await this.tasksRepository.update({ sprint_id: id }, { sprint_id: null as any });
     await this.sprintsRepository.delete(id);
-    return { success: true, message: 'Sprint deleted successfully' };
+    return { success: true, message: 'Sprint deleted successfully and tasks returned to backlog' };
   }
 
   async getStats(id: string, org_id: string, user?: ProjectViewer) {
