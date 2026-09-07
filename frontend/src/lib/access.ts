@@ -1,7 +1,12 @@
-import { UserRole } from '@/types/roles';
+import { UserRole, Permission, ROLE_PERMISSIONS } from '@/types/roles';
 
 function normalizeRole(role?: string | null): string {
   return String(role || '').toLowerCase();
+}
+
+function hasPermission(role: string | null | undefined, permission: Permission): boolean {
+  const r = normalizeRole(role) as UserRole;
+  return ROLE_PERMISSIONS[r]?.includes(permission) ?? false;
 }
 
 /** CEO — meetings and full org admin. */
@@ -28,6 +33,22 @@ export function canCreateSprints(role?: string | null): boolean {
 }
 
 export function canCreateTeams(role?: string | null): boolean {
+  return isDeliveryAdmin(role);
+}
+
+/**
+ * Roles with MANAGE_TASKS permission can move cards / update task status.
+ * Includes: CEO, CTO, CISO, Software Engineer, UI/UX Designer.
+ * Excludes: Finance, Customer Support (view-only on tasks).
+ */
+export function canUpdateTaskStatus(role?: string | null): boolean {
+  return hasPermission(role, Permission.MANAGE_TASKS);
+}
+
+/**
+ * Only delivery admins (CEO, CTO) can delete tasks.
+ */
+export function canDeleteTask(role?: string | null): boolean {
   return isDeliveryAdmin(role);
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { MoreHorizontal, Plus, X } from 'lucide-react';
+import { MoreHorizontal, Plus, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { MockRecord } from '@/mocks';
 import {
@@ -11,7 +11,12 @@ import {
   applyColumnMove,
   resolveColumnId,
 } from '@/mocks/boards';
-import { useCreateEntity, useEntityList, useUpdateEntity } from '@/hooks/useEntityApi';
+import {
+  useCreateEntity,
+  useDeleteEntity,
+  useEntityList,
+  useUpdateEntity,
+} from '@/hooks/useEntityApi';
 import { useUsers } from '@/hooks/useUsers';
 import { Avatar } from '@/components/UI/Avatar';
 import { Button } from '@/components/UI/Button';
@@ -78,6 +83,10 @@ interface KanbanBoardProps {
   boardSubtitle?: string;
   /** When false, hide inline “Add a card” (non-admin viewers). */
   allowCreateCards?: boolean;
+  /** When false, cards cannot be dragged / status cannot be changed. */
+  allowMoveCards?: boolean;
+  /** When false, hide the delete card button. */
+  allowDeleteCards?: boolean;
 }
 
 /**
@@ -95,6 +104,8 @@ export function KanbanBoard({
   boardTitle,
   boardSubtitle,
   allowCreateCards = true,
+  allowMoveCards = true,
+  allowDeleteCards = true,
 }: KanbanBoardProps) {
   const [items, setItems] = useState<MockRecord[]>(initialItems);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -106,6 +117,8 @@ export function KanbanBoard({
 
   const createEntity = useCreateEntity(entityKey);
   const updateEntity = useUpdateEntity(entityKey);
+  const deleteEntity = useDeleteEntity(entityKey);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const { data: users = [] } = useUsers();
   const { data: projects = [] } = useEntityList('projects');
 
@@ -155,6 +168,19 @@ export function KanbanBoard({
       onItemsChange?.();
     } catch {
       setItems((prev) => prev.map((item) => (item.id === itemId ? current : item)));
+    }
+  };
+
+  const deleteCard = async (id: string) => {
+    setConfirmDelete(null);
+    setActive(null);
+    setItems((prev) => prev.filter((item) => item.id !== id));
+    try {
+      await deleteEntity.mutateAsync(id);
+      onItemsChange?.();
+    } catch {
+      // toast from mutation; refetch to restore UI state
+      onItemsChange?.();
     }
   };
 
@@ -263,7 +289,14 @@ export function KanbanBoard({
             <p className="truncate text-xs text-white/80">{boardSubtitle}</p>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">{boardActions}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!allowMoveCards && (
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white/90">
+              View only
+            </span>
+          )}
+          {boardActions}
+        </div>
       </div>
 
       {/* Lists rail */}
@@ -313,8 +346,9 @@ export function KanbanBoard({
                 {cards.map((card) => (
                   <article
                     key={card.id}
-                    draggable
+                    draggable={allowMoveCards}
                     onDragStart={(e) => {
+                      if (!allowMoveCards) return;
                       setDraggingId(card.id);
                       e.dataTransfer.setData('text/card-id', card.id);
                       e.dataTransfer.effectAllowed = 'move';
@@ -325,7 +359,8 @@ export function KanbanBoard({
                     }}
                     onClick={() => setActive(card)}
                     className={cn(
-                      'cursor-pointer rounded-[8px] bg-white px-3 py-2 shadow-[0_1px_1px_rgba(9,30,66,0.25)] hover:outline hover:outline-2 hover:outline-[#388bff]',
+                      'rounded-[8px] bg-white px-3 py-2 shadow-[0_1px_1px_rgba(9,30,66,0.25)] hover:outline hover:outline-2 hover:outline-[#388bff]',
+                      allowMoveCards ? 'cursor-pointer' : 'cursor-default',
                       draggingId === card.id && 'rotate-1 opacity-60',
                     )}
                   >
@@ -440,15 +475,18 @@ export function KanbanBoard({
         })}
       </div>
 
-      {/* Card back (Trello-style detail) */}
+      {/* Card detail modal */}
       <Modal isOpen={!!active} onClose={() => setActive(null)} title={active?.title || 'Card'} size="lg">
         {active && (
           <div className="space-y-4 text-sm">
+            {/* Title */}
             <Input
               label="Title"
               value={active.title || ''}
               onChange={(e) => setActive({ ...active, title: e.target.value })}
             />
+
+            {/* Description */}
             <TextArea
               label="Description"
               rows={4}
@@ -456,9 +494,28 @@ export function KanbanBoard({
               onChange={(e) => setActive({ ...active, description: e.target.value })}
               placeholder="Add a more detailed description…"
             />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {/* Status */}
               <Select
-                label="Priority (label)"
+                label="Status"
+                value={resolveColumnId(active.status, columns) || 'todo'}
+                onChange={(e) => {
+                  const col = e.target.value as BoardColumnId;
+                  void moveItem(active.id, col);
+                }}
+                disabled={!allowMoveCards}
+              >
+                {columns.map((col) => (
+                  <option key={col.id} value={col.id}>
+                    {col.title}
+                  </option>
+                ))}
+              </Select>
+
+              {/* Priority */}
+              <Select
+                label="Priority"
                 value={active.priority || 'medium'}
                 onChange={(e) =>
                   setActive({ ...active, priority: e.target.value as MockRecord['priority'] })
@@ -469,6 +526,8 @@ export function KanbanBoard({
                 <option value="high">High</option>
                 <option value="critical">Critical</option>
               </Select>
+
+              {/* Due date */}
               <Input
                 label="Due date"
                 type="date"
@@ -477,11 +536,12 @@ export function KanbanBoard({
               />
             </div>
 
+            {/* Members */}
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
                 Members
               </p>
-              <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
+              <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
                 {(users as any[]).length === 0 ? (
                   <p className="px-2 py-3 text-xs text-ink-muted">No users available</p>
                 ) : (
@@ -530,34 +590,59 @@ export function KanbanBoard({
               ) : null}
             </div>
 
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                Move to list
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {columns.map((col) => (
-                  <Button
-                    key={col.id}
-                    size="sm"
-                    variant={resolveColumnId(active.status, columns) === col.id ? 'primary' : 'outline'}
-                    onClick={() => void moveItem(active.id, col.id)}
-                  >
-                    {col.title}
-                  </Button>
-                ))}
-              </div>
-            </div>
+            {/* Footer actions */}
+            <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+              {/* Delete — only for admins */}
+              {allowDeleteCards ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(active.id)}
+                  className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-[#eb5a46] hover:bg-[#eb5a46]/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete card
+                </button>
+              ) : (
+                <span className="text-xs text-ink-muted italic">View only — contact admin to delete</span>
+              )}
 
-            <div className="flex justify-end gap-2 border-t border-border pt-3">
-              <Button variant="ghost" onClick={() => setActive(null)}>
-                Close
-              </Button>
-              <Button loading={updateEntity.isPending} onClick={() => void saveActive()}>
-                Save
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => setActive(null)}>
+                  Close
+                </Button>
+                <Button loading={updateEntity.isPending} onClick={() => void saveActive()}>
+                  Save changes
+                </Button>
+              </div>
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Delete confirmation dialog */}
+      <Modal
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete card?"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-ink-secondary">
+            This will permanently delete the card and cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirmDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              loading={deleteEntity.isPending}
+              onClick={() => confirmDelete && void deleteCard(confirmDelete)}
+              className="bg-[#eb5a46] hover:bg-[#c9372c] text-white"
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -22,7 +22,7 @@ import { TextArea } from '@/components/UI/TextArea';
 import { KanbanBoard } from '@/components/boards/KanbanBoard';
 import { formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
-import { canCreateSprints, canCreateTasks } from '@/lib/access';
+import { canCreateSprints, canCreateTasks, canUpdateTaskStatus, canDeleteTask } from '@/lib/access';
 
 interface BoardWorkspaceProps {
   title?: string;
@@ -42,6 +42,8 @@ export function BoardWorkspace({ title = 'Board' }: BoardWorkspaceProps) {
   const user = useAuthStore((s) => s.user);
   const allowCreateSprint = canCreateSprints(user?.role);
   const allowCreateTask = canCreateTasks(user?.role);
+  const allowMoveTask = canUpdateTaskStatus(user?.role);
+  const allowDeleteTask = canDeleteTask(user?.role);
   const {
     data: sprints = [],
     isLoading: sprintsLoading,
@@ -108,29 +110,22 @@ export function BoardWorkspace({ title = 'Board' }: BoardWorkspaceProps) {
 
   const displayItems = useMemo(() => {
     const all = tasks as MockRecord[];
-    if (!sprint) {
-      return all
-        .filter((t) => !(t as any).sprint_id)
-        .map((t) => ({ ...t, status: 'backlog', statusVariant: 'default' as const }));
-    }
-
-    return all
-      .filter((task) => {
-        const sid = (task as any).sprint_id || null;
-        return !sid || sid === sprint.id;
-      })
-      .map((task) => {
-        const sid = (task as any).sprint_id || null;
-        if (!sid) {
-          return { ...task, status: 'backlog', statusVariant: 'default' as const };
-        }
-        const status = String(task.status || 'todo').toLowerCase();
-        if (status === 'backlog' || status === 'open') {
-          return { ...task, status: 'todo', statusVariant: 'default' as const };
-        }
-        return task;
-      });
-  }, [tasks, sprint]);
+    // Always show ALL tasks across all 5 columns.
+    // Tasks with no sprint_id land in Backlog; tasks with a sprint_id flow through the other columns.
+    return all.map((task) => {
+      const sid = (task as any).sprint_id || null;
+      // If the task belongs to a different sprint than the one selected, keep it visible
+      // in its real status column so users can see the full board picture.
+      if (!sid) {
+        return { ...task, status: 'backlog', statusVariant: 'default' as const };
+      }
+      const status = String(task.status || 'todo').toLowerCase();
+      if (status === 'backlog' || status === 'open') {
+        return { ...task, status: 'todo', statusVariant: 'default' as const };
+      }
+      return task;
+    });
+  }, [tasks]);
 
   const sprintCommitted = useMemo(() => {
     if (!sprint) return [] as MockRecord[];
@@ -353,7 +348,7 @@ export function BoardWorkspace({ title = 'Board' }: BoardWorkspaceProps) {
   return (
     <div>
       <KanbanBoard
-        key={sprint?.id || 'backlog-only'}
+        key={sprint?.id || 'full-board'}
         embedded
         boardTitle={
           projectName && sprint?.title
@@ -363,17 +358,15 @@ export function BoardWorkspace({ title = 'Board' }: BoardWorkspaceProps) {
         boardSubtitle={subtitleParts.join(' · ')}
         boardActions={boardActions}
         initialItems={displayItems}
-        columns={
-          sprint
-            ? TRELLO_SCRUM_COLUMNS
-            : TRELLO_SCRUM_COLUMNS.filter((c) => c.id === 'backlog')
-        }
+        columns={TRELLO_SCRUM_COLUMNS}
         entityKey="tasks"
         projectId={defaultProjectId || undefined}
         sprintId={sprint?.id || null}
-        onMoveCard={handleMove}
+        onMoveCard={allowMoveTask ? handleMove : undefined}
         onItemsChange={refresh}
         allowCreateCards={allowCreateTask}
+        allowMoveCards={allowMoveTask}
+        allowDeleteCards={allowDeleteTask}
       />
 
       {allowCreateSprint ? (
