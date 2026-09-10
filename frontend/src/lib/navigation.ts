@@ -193,6 +193,7 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
         items: [
           { name: 'Product', href: '/ciso/product', icon: FolderKanban },
           { name: 'Board', href: '/ciso/board', icon: ListTodo },
+          { name: 'Code Reviews', href: '/ciso/code-reviews', icon: GitPullRequest },
         ],
       },
       {
