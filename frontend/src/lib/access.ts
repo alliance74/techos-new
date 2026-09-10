@@ -17,7 +17,7 @@ export function isOrgAdmin(role?: string | null): boolean {
 /** CEO or CTO — tasks, sprints, teams. */
 export function isDeliveryAdmin(role?: string | null): boolean {
   const r = normalizeRole(role);
-  return r === UserRole.CEO || r === UserRole.CTO;
+  return r === UserRole.CEO || r === UserRole.CTO || r === UserRole.CISO;
 }
 
 export function canCreateMeetings(role?: string | null): boolean {

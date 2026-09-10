@@ -9,6 +9,9 @@ build/
 out/
 
 # Environment variables
+.env
+.env.*
+*.env
 
 # Logs
 logs/

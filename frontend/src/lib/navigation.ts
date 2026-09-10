@@ -188,6 +188,14 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
         items: [{ name: 'Dashboard', href: '/ciso', icon: LayoutDashboard }],
       },
       {
+        id: 'delivery',
+        label: 'Delivery',
+        items: [
+          { name: 'Product', href: '/ciso/product', icon: FolderKanban },
+          { name: 'Board', href: '/ciso/board', icon: ListTodo },
+        ],
+      },
+      {
         id: 'security-ops',
         label: 'Security Ops',
         items: [

@@ -174,8 +174,8 @@ export function resolveEntityKey(pathname: string): string {
   for (let i = segments.length - 1; i >= 0; i--) {
     const segment = segments[i].toLowerCase();
     if (segment === 'product') {
-      // CEO Delivery "Product" is the former Projects hub; other roles keep features.
-      return root === 'ceo' ? 'projects' : 'features';
+      // CEO/CISO Delivery "Product" is the Projects hub; other roles keep features.
+      return root === 'ceo' || root === 'ciso' ? 'projects' : 'features';
     }
     if (SEGMENT_TO_ENTITY_KEY[segment]) {
       return SEGMENT_TO_ENTITY_KEY[segment];
