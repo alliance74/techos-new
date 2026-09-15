@@ -34,6 +34,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { CisoModule } from './modules/ciso/ciso.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { CodeReviewsModule } from './modules/code-reviews/code-reviews.module';
+import { GithubModule } from './modules/github/github.module';
 
 function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
   const dbType = (
@@ -133,6 +134,7 @@ function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
     CisoModule,
     WorkspaceModule,
     CodeReviewsModule,
+    GithubModule,
   ],
   controllers: [AppController],
   providers: [AppService],
