@@ -95,6 +95,7 @@ export class TasksService {
       story_points: createTaskDto.story_points,
       due_date: createTaskDto.due_date,
       tags: createTaskDto.tags,
+      is_private: createTaskDto.is_private || false,
       reporter_id: actor?.id,
     } as Partial<Task>);
 
@@ -205,6 +206,16 @@ export class TasksService {
       .leftJoin(Project, 'project', 'task.project_id = project.id')
       .where('project.org_id = :org_id', { org_id })
       .andWhere('task.project_id IN (:...allowedIds)', { allowedIds });
+
+    // Filter out private tasks unless user is the assignee
+    if (user?.id) {
+      queryBuilder.andWhere(
+        '(task.is_private = :false OR task.assignee_id = :userId OR task.reporter_id = :userId)',
+        { false: false, userId: user.id },
+      );
+    } else {
+      queryBuilder.andWhere('task.is_private = :false', { false: false });
+    }
 
     if (filters?.project_id) {
       queryBuilder.andWhere('task.project_id = :project_id', {
@@ -400,5 +411,25 @@ export class TasksService {
       order: { created_at: 'ASC' },
     });
     return { success: true, data: await this.enrichTasks(subtasks) };
+  }
+
+  /**
+   * Get personal/private tasks for a user
+   * These tasks are only visible to the user themselves
+   */
+  async getPersonalTasks(org_id: string, user_id: string) {
+    const tasks = await this.tasksRepository
+      .createQueryBuilder('task')
+      .leftJoin(Project, 'project', 'task.project_id = project.id')
+      .where('project.org_id = :org_id', { org_id })
+      .andWhere('task.is_private = :isPrivate', { isPrivate: true })
+      .andWhere('(task.assignee_id = :userId OR task.reporter_id = :userId)', {
+        userId: user_id,
+      })
+      .select('task.*')
+      .orderBy('task.created_at', 'DESC')
+      .getRawMany();
+
+    return { success: true, data: await this.enrichTasks(tasks) };
   }
 }

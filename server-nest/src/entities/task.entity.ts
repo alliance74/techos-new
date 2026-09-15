@@ -66,6 +66,10 @@ export class Task {
   @Column({ type: 'json', nullable: true })
   tags: string[];
 
+  /** Private tasks are only visible to the assignee, not the whole org */
+  @Column({ default: false })
+  is_private: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 

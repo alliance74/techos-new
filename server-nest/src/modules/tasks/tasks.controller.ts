@@ -38,6 +38,11 @@ export class TasksController {
     return this.tasksService.getSubtasks(id, user.org_id, user);
   }
 
+  @Get('personal/me')
+  getPersonalTasks(@CurrentUser() user: any) {
+    return this.tasksService.getPersonalTasks(user.org_id, user.id);
+  }
+
   @Put(':id')
   update(
     @CurrentUser() user: any,
