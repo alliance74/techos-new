@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ReportsService } from './reports.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -25,7 +35,11 @@ export class ReportsController {
   }
 
   @Put('saved/:id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.reportsService.updateReport(id, user.org_id, updateDto);
   }
 
@@ -49,7 +63,11 @@ export class ReportsController {
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
   ) {
-    return this.reportsService.generateFinancialReport(user.org_id, start_date, end_date);
+    return this.reportsService.generateFinancialReport(
+      user.org_id,
+      start_date,
+      end_date,
+    );
   }
 
   @Get('generate/kpi')
@@ -64,7 +82,12 @@ export class ReportsController {
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
   ) {
-    return this.reportsService.generateTaskReport(user.org_id, user_id, start_date, end_date);
+    return this.reportsService.generateTaskReport(
+      user.org_id,
+      user_id,
+      start_date,
+      end_date,
+    );
   }
 
   @Get('generate/bugs')
@@ -73,7 +96,11 @@ export class ReportsController {
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
   ) {
-    return this.reportsService.generateBugReport(user.org_id, start_date, end_date);
+    return this.reportsService.generateBugReport(
+      user.org_id,
+      start_date,
+      end_date,
+    );
   }
 
   @Get('generate/:type')
@@ -83,10 +110,17 @@ export class ReportsController {
     @Query() params: any,
   ) {
     if (type === 'project') {
-      return this.reportsService.generateProjectReport(user.org_id, params.project_id);
+      return this.reportsService.generateProjectReport(
+        user.org_id,
+        params.project_id,
+      );
     }
     if (type === 'financial') {
-      return this.reportsService.generateFinancialReport(user.org_id, params.start_date, params.end_date);
+      return this.reportsService.generateFinancialReport(
+        user.org_id,
+        params.start_date,
+        params.end_date,
+      );
     }
     if (type === 'kpi') {
       return this.reportsService.generateKPIReport(user.org_id);
@@ -99,6 +133,10 @@ export class ReportsController {
         params.end_date,
       );
     }
-    return this.reportsService.generateBugReport(user.org_id, params.start_date, params.end_date);
+    return this.reportsService.generateBugReport(
+      user.org_id,
+      params.start_date,
+      params.end_date,
+    );
   }
 }

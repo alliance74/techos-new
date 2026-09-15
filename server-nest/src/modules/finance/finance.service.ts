@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -30,7 +34,11 @@ export class FinanceService {
   ) {}
 
   // Invoices
-  async createInvoice(org_id: string, createInvoiceDto: CreateInvoiceDto, actor?: any) {
+  async createInvoice(
+    org_id: string,
+    createInvoiceDto: CreateInvoiceDto,
+    actor?: any,
+  ) {
     const amount = Number(createInvoiceDto.amount || 0);
     const tax = Number(createInvoiceDto.tax || 0);
     const total = Number(createInvoiceDto.total ?? amount + tax);
@@ -40,7 +48,8 @@ export class FinanceService {
       org_id,
       contact_id: createInvoiceDto.contact_id,
       invoice_number:
-        createInvoiceDto.invoice_number || `INV-${Date.now().toString().slice(-8)}`,
+        createInvoiceDto.invoice_number ||
+        `INV-${Date.now().toString().slice(-8)}`,
       client_name: createInvoiceDto.client_name || undefined,
       amount,
       tax,
@@ -49,7 +58,11 @@ export class FinanceService {
       issued_date: createInvoiceDto.issued_date || today,
       items: createInvoiceDto.items || [
         {
-          description: createInvoiceDto.description || createInvoiceDto.notes || createInvoiceDto.client_name || 'Service',
+          description:
+            createInvoiceDto.description ||
+            createInvoiceDto.notes ||
+            createInvoiceDto.client_name ||
+            'Service',
           quantity: 1,
           unit_price: amount,
           total: amount,
@@ -118,7 +131,12 @@ export class FinanceService {
     };
   }
 
-  async updateInvoice(id: string, org_id: string, updateData: Partial<Invoice>, actor?: any) {
+  async updateInvoice(
+    id: string,
+    org_id: string,
+    updateData: Partial<Invoice>,
+    actor?: any,
+  ) {
     const invoice = await this.invoicesRepository.findOne({
       where: { id, org_id },
     });
@@ -194,7 +212,11 @@ export class FinanceService {
   }
 
   // Expenses
-  async createExpense(org_id: string, actor: any, createExpenseDto: CreateExpenseDto) {
+  async createExpense(
+    org_id: string,
+    actor: any,
+    createExpenseDto: CreateExpenseDto,
+  ) {
     const expense = this.expensesRepository.create({
       id: randomUUID(),
       org_id,
@@ -267,7 +289,11 @@ export class FinanceService {
     };
   }
 
-  async updateExpense(id: string, org_id: string, updateData: Partial<Expense>) {
+  async updateExpense(
+    id: string,
+    org_id: string,
+    updateData: Partial<Expense>,
+  ) {
     const expense = await this.expensesRepository.findOne({
       where: { id, org_id },
     });
@@ -285,10 +311,17 @@ export class FinanceService {
     };
   }
 
-  async approveExpense(id: string, org_id: string, user_id: string, user_role: string) {
+  async approveExpense(
+    id: string,
+    org_id: string,
+    user_id: string,
+    user_role: string,
+  ) {
     // Check if user has permission (CEO, CFO, Finance Manager)
     if (![UserRole.CEO, UserRole.FINANCE].includes(user_role as UserRole)) {
-      throw new ForbiddenException('You do not have permission to approve expenses');
+      throw new ForbiddenException(
+        'You do not have permission to approve expenses',
+      );
     }
 
     const expense = await this.expensesRepository.findOne({
@@ -321,10 +354,18 @@ export class FinanceService {
     };
   }
 
-  async rejectExpense(id: string, org_id: string, user_id: string, user_role: string, reason?: string) {
+  async rejectExpense(
+    id: string,
+    org_id: string,
+    user_id: string,
+    user_role: string,
+    reason?: string,
+  ) {
     // Check permission
     if (![UserRole.CEO, UserRole.FINANCE].includes(user_role as UserRole)) {
-      throw new ForbiddenException('You do not have permission to reject expenses');
+      throw new ForbiddenException(
+        'You do not have permission to reject expenses',
+      );
     }
 
     const expense = await this.expensesRepository.findOne({
@@ -371,7 +412,11 @@ export class FinanceService {
   }
 
   // Budgets
-  async createBudget(org_id: string, user_id: string, createBudgetDto: CreateBudgetDto) {
+  async createBudget(
+    org_id: string,
+    user_id: string,
+    createBudgetDto: CreateBudgetDto,
+  ) {
     const budget = this.budgetsRepository.create({
       id: randomUUID(),
       org_id,
@@ -397,7 +442,8 @@ export class FinanceService {
     // Calculate utilization percentage
     const budgetsWithUtilization = budgets.map((budget) => ({
       ...budget,
-      utilization: budget.allocated > 0 ? (budget.spent / budget.allocated) * 100 : 0,
+      utilization:
+        budget.allocated > 0 ? (budget.spent / budget.allocated) * 100 : 0,
       remaining: budget.allocated - budget.spent,
     }));
 
@@ -416,7 +462,8 @@ export class FinanceService {
       throw new NotFoundException('Budget not found');
     }
 
-    const utilization = budget.allocated > 0 ? (budget.spent / budget.allocated) * 100 : 0;
+    const utilization =
+      budget.allocated > 0 ? (budget.spent / budget.allocated) * 100 : 0;
 
     return {
       success: true,
@@ -464,16 +511,24 @@ export class FinanceService {
   }
 
   // Financial Reports
-  async getFinancialSummary(org_id: string, start_date?: string, end_date?: string) {
+  async getFinancialSummary(
+    org_id: string,
+    start_date?: string,
+    end_date?: string,
+  ) {
     // Total income from invoices
     const invoiceQuery = this.invoicesRepository
       .createQueryBuilder('invoice')
       .select('SUM(invoice.total)', 'total')
       .where('invoice.org_id = :org_id', { org_id })
-      .andWhere('invoice.status IN (:...statuses)', { statuses: ['paid', 'sent'] });
+      .andWhere('invoice.status IN (:...statuses)', {
+        statuses: ['paid', 'sent'],
+      });
 
     if (start_date) {
-      invoiceQuery.andWhere('invoice.issued_date >= :start_date', { start_date });
+      invoiceQuery.andWhere('invoice.issued_date >= :start_date', {
+        start_date,
+      });
     }
     if (end_date) {
       invoiceQuery.andWhere('invoice.issued_date <= :end_date', { end_date });
@@ -507,13 +562,18 @@ export class FinanceService {
         total_income: totalIncome,
         total_expenses: totalExpenses,
         net_profit: netProfit,
-        profit_margin: totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(2) : 0,
+        profit_margin:
+          totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(2) : 0,
       },
     };
   }
 
   // Helper methods
-  private async updateBudgetSpent(org_id: string, category: string, amount: number) {
+  private async updateBudgetSpent(
+    org_id: string,
+    category: string,
+    amount: number,
+  ) {
     const budget = await this.budgetsRepository.findOne({
       where: { org_id, category },
     });
@@ -533,7 +593,11 @@ export class FinanceService {
     }
   }
 
-  private async notifyFinanceTeam(org_id: string, title: string, message: string) {
+  private async notifyFinanceTeam(
+    org_id: string,
+    title: string,
+    message: string,
+  ) {
     // Find all finance team members
     const financeUsers = await this.usersRepository.find({
       where: { org_id, role: UserRole.FINANCE },

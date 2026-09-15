@@ -31,7 +31,13 @@ export class CalendarController {
     @Query('end_date') end_date?: string,
     @Query('type') type?: string,
   ) {
-    return this.calendarService.findAll(user.org_id, user.id, start_date, end_date, type);
+    return this.calendarService.findAll(
+      user.org_id,
+      user.id,
+      start_date,
+      end_date,
+      type,
+    );
   }
 
   @Get('events/my')
@@ -40,7 +46,12 @@ export class CalendarController {
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
   ) {
-    return this.calendarService.getUserEvents(user.org_id, user.id, start_date, end_date);
+    return this.calendarService.getUserEvents(
+      user.org_id,
+      user.id,
+      start_date,
+      end_date,
+    );
   }
 
   @Get('events/:id')
@@ -49,7 +60,11 @@ export class CalendarController {
   }
 
   @Put('events/:id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.calendarService.update(id, user.org_id, user.id, updateData);
   }
 

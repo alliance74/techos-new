@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SprintsService } from './sprints.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -34,7 +44,11 @@ export class SprintsController {
   }
 
   @Put(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateSprintDto: any) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateSprintDto: any,
+  ) {
     return this.sprintsService.update(id, user.org_id, updateSprintDto, user);
   }
 
@@ -54,7 +68,12 @@ export class SprintsController {
     @Param('sprintId') sprintId: string,
     @Param('taskId') taskId: string,
   ) {
-    return this.sprintsService.addTaskToSprint(sprintId, taskId, user.org_id, user);
+    return this.sprintsService.addTaskToSprint(
+      sprintId,
+      taskId,
+      user.org_id,
+      user,
+    );
   }
 
   @Delete(':sprintId/tasks/:taskId')
@@ -63,7 +82,12 @@ export class SprintsController {
     @Param('sprintId') sprintId: string,
     @Param('taskId') taskId: string,
   ) {
-    return this.sprintsService.removeTaskFromSprint(sprintId, taskId, user.org_id, user);
+    return this.sprintsService.removeTaskFromSprint(
+      sprintId,
+      taskId,
+      user.org_id,
+      user,
+    );
   }
 
   @Delete(':id')

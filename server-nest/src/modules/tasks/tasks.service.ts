@@ -14,12 +14,19 @@ import {
 import { assertDeliveryAdmin } from '../../common/utils/org-admin';
 import { NotificationsService } from '../notifications/notifications.service';
 
-function normalizeAssigneeFields(dto: any): { assignee_id: string | null; assignee_ids: string[] } {
+function normalizeAssigneeFields(dto: any): {
+  assignee_id: string | null;
+  assignee_ids: string[];
+} {
   const fromArray: string[] = Array.isArray(dto?.assignee_ids)
-    ? dto.assignee_ids.filter((id: unknown): id is string => typeof id === 'string' && !!id.trim())
+    ? dto.assignee_ids.filter(
+        (id: unknown): id is string => typeof id === 'string' && !!id.trim(),
+      )
     : [];
   const fromSingle: string[] =
-    dto?.assignee_id && typeof dto.assignee_id === 'string' && dto.assignee_id.trim()
+    dto?.assignee_id &&
+    typeof dto.assignee_id === 'string' &&
+    dto.assignee_id.trim()
       ? [dto.assignee_id]
       : [];
   const ids = [...new Set(fromArray.length ? fromArray : fromSingle)];
@@ -42,13 +49,22 @@ export class TasksService {
     private notificationsService: NotificationsService,
   ) {}
 
-  private async getAccessibleProjectIds(org_id: string, user?: ProjectViewer): Promise<string[]> {
+  private async getAccessibleProjectIds(
+    org_id: string,
+    user?: ProjectViewer,
+  ): Promise<string[]> {
     const projects = await this.projectsRepository.find({ where: { org_id } });
     return projects.filter((p) => canViewProject(p, user)).map((p) => p.id);
   }
 
-  private async assertProjectAccess(project_id: string, org_id: string, user?: ProjectViewer) {
-    const project = await this.projectsRepository.findOne({ where: { id: project_id, org_id } });
+  private async assertProjectAccess(
+    project_id: string,
+    org_id: string,
+    user?: ProjectViewer,
+  ) {
+    const project = await this.projectsRepository.findOne({
+      where: { id: project_id, org_id },
+    });
     if (!project) {
       throw new NotFoundException('Project not found');
     }
@@ -60,7 +76,8 @@ export class TasksService {
     assertDeliveryAdmin(actor, 'create tasks');
     await this.assertProjectAccess(createTaskDto.project_id, org_id, actor);
 
-    const { assignee_id, assignee_ids } = normalizeAssigneeFields(createTaskDto);
+    const { assignee_id, assignee_ids } =
+      normalizeAssigneeFields(createTaskDto);
 
     const task = this.tasksRepository.create({
       id: randomUUID(),
@@ -82,11 +99,13 @@ export class TasksService {
     } as Partial<Task>);
 
     const saved = await this.tasksRepository.save(task);
-    
+
     if (saved.assignee_ids && saved.assignee_ids.length > 0) {
-      const project = await this.projectsRepository.findOne({ where: { id: saved.project_id } });
+      const project = await this.projectsRepository.findOne({
+        where: { id: saved.project_id },
+      });
       const projectName = project?.name || 'Unknown Project';
-      
+
       for (const id of saved.assignee_ids) {
         if (id !== actor?.id) {
           await this.notificationsService.notifyTaskAssigned(
@@ -94,12 +113,12 @@ export class TasksService {
             saved.title,
             id,
             projectName,
-            org_id
+            org_id,
           );
         }
       }
     }
-    
+
     await this.activityLogService.log({
       org_id,
       actor,
@@ -129,9 +148,7 @@ export class TasksService {
   }
 
   private async enrichTasks(tasks: any[]) {
-    const allIds = [
-      ...new Set(tasks.flatMap((t) => this.parseAssigneeIds(t))),
-    ];
+    const allIds = [...new Set(tasks.flatMap((t) => this.parseAssigneeIds(t)))];
     if (!allIds.length) {
       return tasks.map((t) => ({
         ...t,
@@ -140,13 +157,18 @@ export class TasksService {
         assignees: [],
       }));
     }
-    const users = await this.usersRepository.find({ where: { id: In(allIds) } });
+    const users = await this.usersRepository.find({
+      where: { id: In(allIds) },
+    });
     const byId = Object.fromEntries(
       users.map((u) => [
         u.id,
         {
           id: u.id,
-          name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
+          name:
+            u.name ||
+            `${u.first_name || ''} ${u.last_name || ''}`.trim() ||
+            u.email,
         },
       ]),
     );
@@ -185,10 +207,14 @@ export class TasksService {
       .andWhere('task.project_id IN (:...allowedIds)', { allowedIds });
 
     if (filters?.project_id) {
-      queryBuilder.andWhere('task.project_id = :project_id', { project_id: filters.project_id });
+      queryBuilder.andWhere('task.project_id = :project_id', {
+        project_id: filters.project_id,
+      });
     }
     if (filters?.status) {
-      queryBuilder.andWhere('task.status = :status', { status: filters.status });
+      queryBuilder.andWhere('task.status = :status', {
+        status: filters.status,
+      });
     }
     if (filters?.assignee_id) {
       queryBuilder.andWhere(
@@ -202,10 +228,15 @@ export class TasksService {
     if (filters?.sprint_id === 'null' || filters?.sprint_id === 'none') {
       queryBuilder.andWhere('task.sprint_id IS NULL');
     } else if (filters?.sprint_id) {
-      queryBuilder.andWhere('task.sprint_id = :sprint_id', { sprint_id: filters.sprint_id });
+      queryBuilder.andWhere('task.sprint_id = :sprint_id', {
+        sprint_id: filters.sprint_id,
+      });
     }
 
-    const tasks = await queryBuilder.select('task.*').orderBy('task.created_at', 'DESC').getRawMany();
+    const tasks = await queryBuilder
+      .select('task.*')
+      .orderBy('task.created_at', 'DESC')
+      .getRawMany();
     return { success: true, data: await this.enrichTasks(tasks) };
   }
 
@@ -263,7 +294,9 @@ export class TasksService {
       if (Array.isArray(patch.assignee_ids)) {
         const ids = [
           ...new Set(
-            patch.assignee_ids.filter((id: unknown) => typeof id === 'string' && id.trim()),
+            patch.assignee_ids.filter(
+              (id: unknown) => typeof id === 'string' && id.trim(),
+            ),
           ),
         ];
         patch.assignee_ids = ids.length ? ids : null;
@@ -274,28 +307,34 @@ export class TasksService {
       } else {
         const normalized = normalizeAssigneeFields(patch);
         patch.assignee_id = normalized.assignee_id;
-        patch.assignee_ids = normalized.assignee_ids.length ? normalized.assignee_ids : null;
+        patch.assignee_ids = normalized.assignee_ids.length
+          ? normalized.assignee_ids
+          : null;
       }
     }
 
     await this.tasksRepository.update(id, patch);
     const updated = await this.tasksRepository.findOne({ where: { id } });
-    
-    const project = await this.projectsRepository.findOne({ where: { id: updated?.project_id || task.project_id } });
+
+    const project = await this.projectsRepository.findOne({
+      where: { id: updated?.project_id || task.project_id },
+    });
     const projectName = project?.name || 'Unknown Project';
 
     // Notify new assignees
     if (updated?.assignee_ids) {
       const oldIds = task.assignee_ids || [];
-      const newIds = updated.assignee_ids.filter(id => !oldIds.includes(id) && id !== actor?.id);
-      
+      const newIds = updated.assignee_ids.filter(
+        (id) => !oldIds.includes(id) && id !== actor?.id,
+      );
+
       for (const id of newIds) {
         await this.notificationsService.notifyTaskAssigned(
           updated.id,
           updated.title,
           id,
           projectName,
-          org_id
+          org_id,
         );
       }
     }
@@ -310,12 +349,12 @@ export class TasksService {
             id,
             updated.status,
             projectName,
-            org_id
+            org_id,
           );
         }
       }
     }
-    
+
     await this.activityLogService.log({
       org_id,
       actor,

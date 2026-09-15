@@ -10,7 +10,12 @@ import { User } from '../../entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Meeting, MeetingParticipant, MeetingActionItem, User]),
+    TypeOrmModule.forFeature([
+      Meeting,
+      MeetingParticipant,
+      MeetingActionItem,
+      User,
+    ]),
     NotificationsModule,
   ],
   controllers: [MeetingsController],

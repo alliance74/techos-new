@@ -38,14 +38,20 @@ export class CisoService {
   }
 
   private async getAuditOrThrow(org_id: string, id: string) {
-    const audit = await this.projectAuditsRepository.findOne({ where: { id, org_id } });
+    const audit = await this.projectAuditsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!audit) {
       throw new NotFoundException('Project audit not found');
     }
     return audit;
   }
 
-  async createAudit(org_id: string, user_id: string, payload: CreateProjectAuditDto) {
+  async createAudit(
+    org_id: string,
+    user_id: string,
+    payload: CreateProjectAuditDto,
+  ) {
     const audit = this.projectAuditsRepository.create({
       id: randomUUID(),
       org_id,
@@ -58,7 +64,10 @@ export class CisoService {
     return { success: true, data: this.serializeAudit(audit, 0) };
   }
 
-  async getAudits(org_id: string, status?: 'needed' | 'in_progress' | 'completed') {
+  async getAudits(
+    org_id: string,
+    status?: 'needed' | 'in_progress' | 'completed',
+  ) {
     const query = this.projectAuditsRepository
       .createQueryBuilder('audit')
       .loadRelationCountAndMap('audit.task_count', 'audit.tasks')
@@ -73,7 +82,12 @@ export class CisoService {
     return {
       success: true,
       data: audits.map((audit) =>
-        this.serializeAudit(audit, Number((audit as ProjectAudit & { task_count?: number }).task_count || 0)),
+        this.serializeAudit(
+          audit,
+          Number(
+            (audit as ProjectAudit & { task_count?: number }).task_count || 0,
+          ),
+        ),
       ),
     };
   }
@@ -98,13 +112,20 @@ export class CisoService {
     };
   }
 
-  async updateAudit(org_id: string, id: string, payload: UpdateProjectAuditDto) {
+  async updateAudit(
+    org_id: string,
+    id: string,
+    payload: UpdateProjectAuditDto,
+  ) {
     const audit = await this.getAuditOrThrow(org_id, id);
     if (payload.name !== undefined) audit.name = payload.name.trim();
-    if (payload.description !== undefined) audit.description = payload.description?.trim() || null;
+    if (payload.description !== undefined)
+      audit.description = payload.description?.trim() || null;
     if (payload.status !== undefined) audit.status = payload.status;
     await this.projectAuditsRepository.save(audit);
-    const taskCount = await this.auditTasksRepository.count({ where: { project_audit_id: id, org_id } });
+    const taskCount = await this.auditTasksRepository.count({
+      where: { project_audit_id: id, org_id },
+    });
     return { success: true, data: this.serializeAudit(audit, taskCount) };
   }
 
@@ -115,7 +136,11 @@ export class CisoService {
     return { success: true, data: { id } };
   }
 
-  async createAuditTask(org_id: string, user_id: string, payload: CreateAuditTaskDto) {
+  async createAuditTask(
+    org_id: string,
+    user_id: string,
+    payload: CreateAuditTaskDto,
+  ) {
     await this.getAuditOrThrow(org_id, payload.project_audit_id);
     const task = this.auditTasksRepository.create({
       id: randomUUID(),
@@ -140,7 +165,10 @@ export class CisoService {
 
   async getAuditTasks(
     org_id: string,
-    filters?: { status?: 'finished' | 'not_finished'; project_audit_id?: string },
+    filters?: {
+      status?: 'finished' | 'not_finished';
+      project_audit_id?: string;
+    },
   ) {
     const query = this.auditTasksRepository
       .createQueryBuilder('task')
@@ -161,7 +189,10 @@ export class CisoService {
     }
 
     const tasks = await query.getMany();
-    return { success: true, data: tasks.map((task) => this.serializeTask(task)) };
+    return {
+      success: true,
+      data: tasks.map((task) => this.serializeTask(task)),
+    };
   }
 
   async getAuditTask(org_id: string, id: string) {
@@ -175,17 +206,27 @@ export class CisoService {
     return { success: true, data: this.serializeTask(task) };
   }
 
-  async updateAuditTask(org_id: string, id: string, payload: UpdateAuditTaskDto) {
-    const task = await this.auditTasksRepository.findOne({ where: { id, org_id } });
+  async updateAuditTask(
+    org_id: string,
+    id: string,
+    payload: UpdateAuditTaskDto,
+  ) {
+    const task = await this.auditTasksRepository.findOne({
+      where: { id, org_id },
+    });
     if (!task) {
       throw new NotFoundException('Audit task not found');
     }
-    if (payload.project_audit_id && payload.project_audit_id !== task.project_audit_id) {
+    if (
+      payload.project_audit_id &&
+      payload.project_audit_id !== task.project_audit_id
+    ) {
       await this.getAuditOrThrow(org_id, payload.project_audit_id);
       task.project_audit_id = payload.project_audit_id;
     }
     if (payload.title !== undefined) task.title = payload.title.trim();
-    if (payload.description !== undefined) task.description = payload.description?.trim() || null;
+    if (payload.description !== undefined)
+      task.description = payload.description?.trim() || null;
     if (payload.status !== undefined) task.status = payload.status;
     if (payload.priority !== undefined) task.priority = payload.priority;
     await this.auditTasksRepository.save(task);
@@ -200,11 +241,15 @@ export class CisoService {
   }
 
   async updateAuditTaskStatus(org_id: string, id: string, finished: boolean) {
-    return this.updateAuditTask(org_id, id, { status: finished ? 'done' : 'todo' });
+    return this.updateAuditTask(org_id, id, {
+      status: finished ? 'done' : 'todo',
+    });
   }
 
   async deleteAuditTask(org_id: string, id: string) {
-    const task = await this.auditTasksRepository.findOne({ where: { id, org_id } });
+    const task = await this.auditTasksRepository.findOne({
+      where: { id, org_id },
+    });
     if (!task) {
       throw new NotFoundException('Audit task not found');
     }
@@ -218,12 +263,18 @@ export class CisoService {
       order: { created_at: 'DESC' },
     });
     const filtered = reports.filter((report) =>
-      ['security', 'audit', 'compliance', 'risk'].includes((report.type || '').toLowerCase()),
+      ['security', 'audit', 'compliance', 'risk'].includes(
+        (report.type || '').toLowerCase(),
+      ),
     );
     return { success: true, data: filtered };
   }
 
-  async createReport(org_id: string, user_id: string, payload: { title: string; summary?: string; type?: string }) {
+  async createReport(
+    org_id: string,
+    user_id: string,
+    payload: { title: string; summary?: string; type?: string },
+  ) {
     const report = this.reportsRepository.create({
       id: randomUUID(),
       org_id,

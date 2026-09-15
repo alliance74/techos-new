@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+} from 'class-validator';
 
 export class CreateDealDto {
   @IsOptional()
@@ -18,7 +24,13 @@ export class CreateDealDto {
   currency?: string;
 
   @IsOptional()
-  @IsEnum(['qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'])
+  @IsEnum([
+    'qualification',
+    'proposal',
+    'negotiation',
+    'closed_won',
+    'closed_lost',
+  ])
   stage?: string;
 
   @IsOptional()
