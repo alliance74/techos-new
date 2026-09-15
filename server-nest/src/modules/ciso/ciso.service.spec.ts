@@ -61,7 +61,9 @@ describe('CisoService project audits and audit tasks', () => {
 
     const removed = await service.deleteAudit(ORG, created.data.id);
     expect(removed.data.id).toBe(created.data.id);
-    await expect(service.getAudit(ORG, created.data.id)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getAudit(ORG, created.data.id)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('creates audit tasks against a selected project audit', async () => {
@@ -85,11 +87,17 @@ describe('CisoService project audits and audit tasks', () => {
     expect(listed.data).toHaveLength(1);
     expect(listed.data[0].title).toBe('Review firewall rules');
 
-    const finished = await service.updateAuditTaskStatus(ORG, task.data.id, true);
+    const finished = await service.updateAuditTaskStatus(
+      ORG,
+      task.data.id,
+      true,
+    );
     expect(finished.data.finished).toBe(true);
     expect(finished.data.status).toBe('done');
 
-    const otherAudit = await service.createAudit(ORG, USER, { name: 'Vendor Review' });
+    const otherAudit = await service.createAudit(ORG, USER, {
+      name: 'Vendor Review',
+    });
     const moved = await service.updateAuditTask(ORG, task.data.id, {
       project_audit_id: otherAudit.data.id,
       title: 'Review vendor access',
@@ -110,14 +118,18 @@ describe('CisoService project audits and audit tasks', () => {
   });
 
   it('deletes related audit tasks when a project audit is deleted', async () => {
-    const audit = await service.createAudit(ORG, USER, { name: 'Cascade Audit' });
+    const audit = await service.createAudit(ORG, USER, {
+      name: 'Cascade Audit',
+    });
     await service.createAuditTask(ORG, USER, {
       project_audit_id: audit.data.id,
       title: 'Child task',
     });
 
     await service.deleteAudit(ORG, audit.data.id);
-    const remaining = await service.getAuditTasks(ORG, { project_audit_id: audit.data.id });
+    const remaining = await service.getAuditTasks(ORG, {
+      project_audit_id: audit.data.id,
+    });
     expect(remaining.data).toHaveLength(0);
   });
 });
