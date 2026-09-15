@@ -20,7 +20,10 @@ export class EmailService {
   private fromEmail: string;
 
   constructor(private configService: ConfigService) {
-    this.fromEmail = this.configService.get<string>('FROM_EMAIL', 'noreply@techos.local');
+    this.fromEmail = this.configService.get<string>(
+      'FROM_EMAIL',
+      'noreply@techos.local',
+    );
 
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     if (apiKey && !apiKey.startsWith('your_')) {
@@ -91,7 +94,11 @@ export class EmailService {
     return null;
   }
 
-  async sendWelcomeEmail(to: string, firstName: string, organizationName: string): Promise<any> {
+  async sendWelcomeEmail(
+    to: string,
+    firstName: string,
+    organizationName: string,
+  ): Promise<any> {
     return this.sendEmail({
       to,
       subject: `Welcome to ${organizationName} on TechOS`,
@@ -105,7 +112,10 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(to: string, resetToken: string): Promise<any> {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const frontendUrl = this.configService.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:3000',
+    );
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     return this.sendEmail({
@@ -159,7 +169,11 @@ export class EmailService {
     });
   }
 
-  async sendNotificationEmail(to: string, title: string, message: string): Promise<any> {
+  async sendNotificationEmail(
+    to: string,
+    title: string,
+    message: string,
+  ): Promise<any> {
     return this.sendEmail({
       to,
       subject: title,

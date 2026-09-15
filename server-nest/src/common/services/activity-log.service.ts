@@ -96,7 +96,9 @@ export class ActivityLogService {
     const rows = await this.activityRepository
       .createQueryBuilder('a')
       .where('a.org_id = :org_id', { org_id })
-      .andWhere('CAST(a.actor_id AS text) = :actor_id', { actor_id: String(actor_id) })
+      .andWhere('CAST(a.actor_id AS text) = :actor_id', {
+        actor_id: String(actor_id),
+      })
       .orderBy('a.created_at', 'DESC')
       .take(Math.max(take * 3, 60))
       .getMany();
@@ -104,7 +106,8 @@ export class ActivityLogService {
     const valuable = rows.filter((row) => {
       const type = (row.entity_type || '').toLowerCase();
       if (VALUABLE_ACTIVITY_TYPES.has(type)) return true;
-      if (type && !['employees', 'users', 'organizations'].includes(type)) return true;
+      if (type && !['employees', 'users', 'organizations'].includes(type))
+        return true;
       return false;
     });
 

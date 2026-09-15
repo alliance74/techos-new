@@ -1,13 +1,26 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateConversationDto {
-  @ApiProperty({ description: 'Conversation title', example: 'Project status discussion' })
+  @ApiProperty({
+    description: 'Conversation title',
+    example: 'Project status discussion',
+  })
   @IsString()
   @IsNotEmpty()
   title: string;
 
-  @ApiProperty({ description: 'AI provider', enum: ['openai', 'claude', 'gemini', 'grok'], required: false })
+  @ApiProperty({
+    description: 'AI provider',
+    enum: ['openai', 'claude', 'gemini', 'grok'],
+    required: false,
+  })
   @IsOptional()
   @IsString()
   provider?: string;
@@ -36,7 +49,10 @@ export class SendMessageDto {
   @IsNotEmpty()
   conversationId: string;
 
-  @ApiProperty({ description: 'Message content', example: 'What are my top priorities?' })
+  @ApiProperty({
+    description: 'Message content',
+    example: 'What are my top priorities?',
+  })
   @IsString()
   @IsNotEmpty()
   message: string;

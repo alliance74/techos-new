@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ProductService } from './product.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -25,7 +36,11 @@ export class ProductController {
   }
 
   @Put('features/:id')
-  updateFeature(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  updateFeature(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.productService.updateFeature(id, user.org_id, updateDto);
   }
 
@@ -61,7 +76,11 @@ export class ProductController {
   }
 
   @Put('epics/:id')
-  updateEpic(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  updateEpic(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.productService.updateEpic(id, user.org_id, updateDto);
   }
 
@@ -87,7 +106,11 @@ export class ProductController {
   }
 
   @Put('bugs/:id')
-  updateBug(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  updateBug(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.productService.updateBug(id, user.org_id, updateDto);
   }
 
@@ -113,7 +136,11 @@ export class ProductController {
   }
 
   @Put('releases/:id')
-  updateRelease(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  updateRelease(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.productService.updateRelease(id, user.org_id, updateDto);
   }
 
@@ -139,7 +166,11 @@ export class ProductController {
   }
 
   @Put('feedback/:id')
-  updateFeedback(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  updateFeedback(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.productService.updateFeedback(id, user.org_id, updateDto);
   }
 
@@ -165,7 +196,11 @@ export class ProductController {
   }
 
   @Put('roadmaps/:id')
-  updateRoadmap(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  updateRoadmap(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.productService.updateRoadmap(id, user.org_id, updateDto);
   }
 

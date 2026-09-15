@@ -48,7 +48,9 @@ export class NotificationsService {
 
     // Send email if requested
     if (createDto.send_email) {
-      const user = await this.usersRepository.findOne({ where: { id: createDto.user_id } });
+      const user = await this.usersRepository.findOne({
+        where: { id: createDto.user_id },
+      });
       if (user && user.email) {
         await this.emailService.sendNotificationEmail(
           user.email,
@@ -136,7 +138,13 @@ export class NotificationsService {
   }
 
   // Helper method to create specific notification types
-  async notifyTaskAssigned(task_id: string, task_title: string, assignee_id: string, project_name: string, org_id: string) {
+  async notifyTaskAssigned(
+    task_id: string,
+    task_title: string,
+    assignee_id: string,
+    project_name: string,
+    org_id: string,
+  ) {
     return this.create(org_id, {
       user_id: assignee_id,
       type: 'task_assigned',
@@ -148,7 +156,13 @@ export class NotificationsService {
     });
   }
 
-  async notifyMeetingInvite(meeting_id: string, meeting_title: string, participant_id: string, start_time: string, org_id: string) {
+  async notifyMeetingInvite(
+    meeting_id: string,
+    meeting_title: string,
+    participant_id: string,
+    start_time: string,
+    org_id: string,
+  ) {
     return this.create(org_id, {
       user_id: participant_id,
       type: 'meeting_invite',
@@ -160,8 +174,16 @@ export class NotificationsService {
     });
   }
 
-  async notifyMention(mentioning_user_id: string, mentioned_user_id: string, channel_id: string, message_preview: string, org_id: string) {
-    const user = await this.usersRepository.findOne({ where: { id: mentioning_user_id } });
+  async notifyMention(
+    mentioning_user_id: string,
+    mentioned_user_id: string,
+    channel_id: string,
+    message_preview: string,
+    org_id: string,
+  ) {
+    const user = await this.usersRepository.findOne({
+      where: { id: mentioning_user_id },
+    });
     const userName = user ? `${user.first_name} ${user.last_name}` : 'Someone';
 
     return this.create(org_id, {
@@ -174,7 +196,13 @@ export class NotificationsService {
     });
   }
 
-  async notifyDeadlineApproaching(task_id: string, task_title: string, assignee_id: string, due_date: string, org_id: string) {
+  async notifyDeadlineApproaching(
+    task_id: string,
+    task_title: string,
+    assignee_id: string,
+    due_date: string,
+    org_id: string,
+  ) {
     return this.create(org_id, {
       user_id: assignee_id,
       type: 'deadline_approaching',
@@ -185,7 +213,14 @@ export class NotificationsService {
       send_email: true,
     });
   }
-  async notifyTaskStatusChanged(task_id: string, task_title: string, user_id: string, new_status: string, project_name: string, org_id: string) {
+  async notifyTaskStatusChanged(
+    task_id: string,
+    task_title: string,
+    user_id: string,
+    new_status: string,
+    project_name: string,
+    org_id: string,
+  ) {
     return this.create(org_id, {
       user_id,
       type: 'task_status_changed',
@@ -196,7 +231,13 @@ export class NotificationsService {
     });
   }
 
-  async notifyProjectInvite(project_id: string, project_name: string, user_id: string, inviter_name: string, org_id: string) {
+  async notifyProjectInvite(
+    project_id: string,
+    project_name: string,
+    user_id: string,
+    inviter_name: string,
+    org_id: string,
+  ) {
     return this.create(org_id, {
       user_id,
       type: 'project_invite',
@@ -208,7 +249,14 @@ export class NotificationsService {
     });
   }
 
-  async notifyNewMessage(channel_id: string, channel_name: string, sender_name: string, message_preview: string, recipient_id: string, org_id: string) {
+  async notifyNewMessage(
+    channel_id: string,
+    channel_name: string,
+    sender_name: string,
+    message_preview: string,
+    recipient_id: string,
+    org_id: string,
+  ) {
     return this.create(org_id, {
       user_id: recipient_id,
       type: 'new_message',

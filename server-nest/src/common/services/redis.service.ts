@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 
@@ -11,7 +16,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(private configService: ConfigService) {}
 
   onModuleInit() {
-    const disabled = this.configService.get<string>('REDIS_ENABLED') === 'false';
+    const disabled =
+      this.configService.get<string>('REDIS_ENABLED') === 'false';
     if (disabled) {
       this.enabled = false;
       this.logger.warn('Redis disabled via REDIS_ENABLED=false');
@@ -19,13 +25,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     const redisHost = this.configService.get<string>('REDIS_HOST');
-    
+
     // If no Redis host is configured, disable Redis silently
     if (!redisHost || redisHost === 'localhost' || redisHost === '127.0.0.1') {
-      const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+      const isProduction =
+        this.configService.get<string>('NODE_ENV') === 'production';
       if (isProduction) {
         this.enabled = false;
-        this.logger.log('Redis not configured (production mode) - running without cache');
+        this.logger.log(
+          'Redis not configured (production mode) - running without cache',
+        );
         return;
       }
     }
@@ -54,7 +63,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.client.on('error', (err) => {
         // Only log error once, not repeatedly
         if (this.enabled) {
-          this.logger.warn(`Redis connection failed - continuing without cache: ${err.message}`);
+          this.logger.warn(
+            `Redis connection failed - continuing without cache: ${err.message}`,
+          );
           this.enabled = false;
         }
       });

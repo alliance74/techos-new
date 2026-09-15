@@ -11,7 +11,19 @@ import { AuditLog } from '../entities/audit-log.entity';
 @Global()
 @Module({
   imports: [TypeOrmModule.forFeature([ActivityEvent, AuditLog])],
-  providers: [CloudinaryService, RedisService, EmailService, EventsGateway, ActivityLogService],
-  exports: [CloudinaryService, RedisService, EmailService, EventsGateway, ActivityLogService],
+  providers: [
+    CloudinaryService,
+    RedisService,
+    EmailService,
+    EventsGateway,
+    ActivityLogService,
+  ],
+  exports: [
+    CloudinaryService,
+    RedisService,
+    EmailService,
+    EventsGateway,
+    ActivityLogService,
+  ],
 })
 export class CommonModule {}

@@ -29,11 +29,11 @@ import { MeetingParticipant } from '../../entities/meeting-participant.entity';
       useFactory: async (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN', '7d');
-        
+
         if (!secret) {
           throw new Error('JWT_SECRET is not defined');
         }
-        
+
         return {
           secret,
           signOptions: {

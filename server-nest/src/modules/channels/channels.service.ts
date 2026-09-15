@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -20,12 +24,17 @@ export class ChannelsService {
 
   /** Ensure the user has at least #general so messaging works out of the box. */
   private async ensureDefaultChannel(org_id: string, user_id: string) {
-    const memberships = await this.membersRepository.count({ where: { user_id } });
+    const memberships = await this.membersRepository.count({
+      where: { user_id },
+    });
     if (memberships > 0) return;
 
     const defaults = [
       { name: 'general', description: 'Company-wide announcements and chat' },
-      { name: 'engineering', description: 'Dev team discussion — PRs, deploys, architecture' },
+      {
+        name: 'engineering',
+        description: 'Dev team discussion — PRs, deploys, architecture',
+      },
       { name: 'standup', description: 'Daily standup updates and blockers' },
     ];
 
@@ -44,30 +53,50 @@ export class ChannelsService {
         });
         await this.channelsRepository.save(channel);
       }
-      await this.addMember(channel.id, user_id, def.name === 'general' ? 'admin' : 'member');
+      await this.addMember(
+        channel.id,
+        user_id,
+        def.name === 'general' ? 'admin' : 'member',
+      );
     }
   }
 
   /** Open or reuse a 1:1 DM between two users. */
-  async findOrCreateDirect(org_id: string, user_id: string, other_user_id: string) {
+  async findOrCreateDirect(
+    org_id: string,
+    user_id: string,
+    other_user_id: string,
+  ) {
     if (!other_user_id || other_user_id === user_id) {
-      throw new ForbiddenException('Pick another teammate for a direct message');
+      throw new ForbiddenException(
+        'Pick another teammate for a direct message',
+      );
     }
 
-    const other = await this.usersRepository.findOne({ where: { id: other_user_id } });
+    const other = await this.usersRepository.findOne({
+      where: { id: other_user_id },
+    });
     if (!other) throw new NotFoundException('User not found');
 
-    const myMemberships = await this.membersRepository.find({ where: { user_id } });
+    const myMemberships = await this.membersRepository.find({
+      where: { user_id },
+    });
     const myChannelIds = myMemberships.map((m) => m.channel_id);
     if (myChannelIds.length) {
       const directChannels = await this.channelsRepository.find({
         where: { org_id, type: 'direct', id: In(myChannelIds) as any },
       });
       for (const channel of directChannels) {
-        const members = await this.membersRepository.find({ where: { channel_id: channel.id } });
+        const members = await this.membersRepository.find({
+          where: { channel_id: channel.id },
+        });
         const ids = members.map((m) => m.user_id).sort();
         const expected = [user_id, other_user_id].sort();
-        if (ids.length === 2 && ids[0] === expected[0] && ids[1] === expected[1]) {
+        if (
+          ids.length === 2 &&
+          ids[0] === expected[0] &&
+          ids[1] === expected[1]
+        ) {
           return {
             success: true,
             data: await this.findOne(channel.id, org_id, user_id),
@@ -77,7 +106,9 @@ export class ChannelsService {
     }
 
     const label =
-      `${other.first_name || ''} ${other.last_name || ''}`.trim() || other.email || 'Direct message';
+      `${other.first_name || ''} ${other.last_name || ''}`.trim() ||
+      other.email ||
+      'Direct message';
     const channel = this.channelsRepository.create({
       id: randomUUID(),
       org_id,
@@ -96,7 +127,11 @@ export class ChannelsService {
     };
   }
 
-  async create(org_id: string, user_id: string, createChannelDto: CreateChannelDto) {
+  async create(
+    org_id: string,
+    user_id: string,
+    createChannelDto: CreateChannelDto,
+  ) {
     const { member_ids, ...channelData } = createChannelDto;
 
     // Create channel
@@ -116,7 +151,9 @@ export class ChannelsService {
     // Add other members
     if (member_ids && member_ids.length > 0) {
       await Promise.all(
-        member_ids.map((memberId) => this.addMember(channel.id, memberId, 'member')),
+        member_ids.map((memberId) =>
+          this.addMember(channel.id, memberId, 'member'),
+        ),
       );
     }
 
@@ -194,7 +231,9 @@ export class ChannelsService {
     const memberRows = await this.membersRepository.find({
       where: { channel_id: id },
     });
-    const userIds = [...new Set(memberRows.map((m) => m.user_id).filter(Boolean))];
+    const userIds = [
+      ...new Set(memberRows.map((m) => m.user_id).filter(Boolean)),
+    ];
     const users = userIds.length
       ? await this.usersRepository.find({ where: { id: In(userIds) as any } })
       : [];
@@ -223,7 +262,12 @@ export class ChannelsService {
     };
   }
 
-  async update(id: string, org_id: string, user_id: string, updateData: Partial<Channel>) {
+  async update(
+    id: string,
+    org_id: string,
+    user_id: string,
+    updateData: Partial<Channel>,
+  ) {
     const channel = await this.channelsRepository.findOne({
       where: { id, org_id },
     });
@@ -281,7 +325,11 @@ export class ChannelsService {
   }
 
   // Member Management
-  private async addMember(channel_id: string, user_id: string, role: string = 'member') {
+  private async addMember(
+    channel_id: string,
+    user_id: string,
+    role: string = 'member',
+  ) {
     const existing = await this.membersRepository.findOne({
       where: { channel_id, user_id },
     });
@@ -298,7 +346,12 @@ export class ChannelsService {
     return member;
   }
 
-  async addMembers(channel_id: string, org_id: string, user_id: string, member_ids: string[]) {
+  async addMembers(
+    channel_id: string,
+    org_id: string,
+    user_id: string,
+    member_ids: string[],
+  ) {
     const channel = await this.channelsRepository.findOne({
       where: { id: channel_id, org_id },
     });
@@ -318,7 +371,9 @@ export class ChannelsService {
 
     // Add members
     await Promise.all(
-      member_ids.map((memberId) => this.addMember(channel_id, memberId, 'member')),
+      member_ids.map((memberId) =>
+        this.addMember(channel_id, memberId, 'member'),
+      ),
     );
 
     return {
@@ -327,7 +382,12 @@ export class ChannelsService {
     };
   }
 
-  async removeMember(channel_id: string, org_id: string, requesting_user_id: string, user_id: string) {
+  async removeMember(
+    channel_id: string,
+    org_id: string,
+    requesting_user_id: string,
+    user_id: string,
+  ) {
     const channel = await this.channelsRepository.findOne({
       where: { id: channel_id, org_id },
     });
@@ -341,7 +401,10 @@ export class ChannelsService {
       where: { channel_id, user_id: requesting_user_id },
     });
 
-    if (requesting_user_id !== user_id && (!membership || membership.role !== 'admin')) {
+    if (
+      requesting_user_id !== user_id &&
+      (!membership || membership.role !== 'admin')
+    ) {
       throw new ForbiddenException('Only channel admins can remove members');
     }
 

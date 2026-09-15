@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GoalsService } from './goals.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -26,7 +37,10 @@ export class GoalsController {
   }
 
   @Get('progress-report')
-  getProgressReport(@CurrentUser() user: any, @Query('quarter') quarter?: string) {
+  getProgressReport(
+    @CurrentUser() user: any,
+    @Query('quarter') quarter?: string,
+  ) {
     return this.goalsService.getProgressReport(user.org_id, quarter);
   }
 
@@ -36,18 +50,27 @@ export class GoalsController {
   }
 
   @Put(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: UpdateGoalDto) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: UpdateGoalDto,
+  ) {
     return this.goalsService.update(id, user.org_id, updateDto, user);
   }
 
   @Patch(':id/key-results/:index')
   updateKeyResult(
-    @CurrentUser() user: any, 
-    @Param('id') id: string, 
+    @CurrentUser() user: any,
+    @Param('id') id: string,
     @Param('index') index: string,
-    @Body('current') current: number
+    @Body('current') current: number,
   ) {
-    return this.goalsService.updateKeyResult(id, user.org_id, parseInt(index), current);
+    return this.goalsService.updateKeyResult(
+      id,
+      user.org_id,
+      parseInt(index),
+      current,
+    );
   }
 
   @Get(':id/key-results')
@@ -61,7 +84,11 @@ export class GoalsController {
   }
 
   @Put('key-results/:id')
-  updateKeyResultById(@CurrentUser() user: any, @Param('id') id: string, @Body() body: any) {
+  updateKeyResultById(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: any,
+  ) {
     return this.goalsService.updateKeyResultById(user.org_id, id, body);
   }
 

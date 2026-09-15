@@ -57,7 +57,11 @@ export class MeetingsController {
     @Param('id') id: string,
     @Body() body: { participant_ids: string[] },
   ) {
-    return this.meetingsService.addParticipants(id, user.org_id, body.participant_ids);
+    return this.meetingsService.addParticipants(
+      id,
+      user.org_id,
+      body.participant_ids,
+    );
   }
 
   @Delete(':id/participants/:userId')
@@ -75,7 +79,11 @@ export class MeetingsController {
     @Param('userId') userId: string,
     @Body() body: { status: 'accepted' | 'declined' },
   ) {
-    return this.meetingsService.updateParticipantStatus(id, userId, body.status);
+    return this.meetingsService.updateParticipantStatus(
+      id,
+      userId,
+      body.status,
+    );
   }
 
   // Action Items
@@ -85,7 +93,11 @@ export class MeetingsController {
     @Param('id') id: string,
     @Body() createActionItemDto: CreateActionItemDto,
   ) {
-    return this.meetingsService.createActionItem(id, user.org_id, createActionItemDto);
+    return this.meetingsService.createActionItem(
+      id,
+      user.org_id,
+      createActionItemDto,
+    );
   }
 
   @Get(':id/action-items')
@@ -108,11 +120,18 @@ export class MeetingsController {
     @Param('id') id: string,
     @Body() updateData: any,
   ) {
-    return this.meetingsService.updateActionItemById(id, user.org_id, updateData);
+    return this.meetingsService.updateActionItemById(
+      id,
+      user.org_id,
+      updateData,
+    );
   }
 
   @Delete(':id/action-items/:actionItemId')
-  deleteActionItem(@Param('id') id: string, @Param('actionItemId') actionItemId: string) {
+  deleteActionItem(
+    @Param('id') id: string,
+    @Param('actionItemId') actionItemId: string,
+  ) {
     return this.meetingsService.deleteActionItem(actionItemId, id);
   }
 }

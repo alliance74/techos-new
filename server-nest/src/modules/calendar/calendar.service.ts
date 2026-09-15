@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -20,18 +24,26 @@ export class CalendarService {
 
   private normalizeAttendees(attendees: unknown, ownerId: string): string[] {
     const raw = Array.isArray(attendees)
-      ? attendees.filter((id): id is string => typeof id === 'string' && !!id.trim())
+      ? attendees.filter(
+          (id): id is string => typeof id === 'string' && !!id.trim(),
+        )
       : [];
     return [...new Set([ownerId, ...raw])];
   }
 
   private assertOwns(event: CalendarEvent, user_id: string) {
     if (event.created_by !== user_id) {
-      throw new ForbiddenException('You can only manage your own calendar events');
+      throw new ForbiddenException(
+        'You can only manage your own calendar events',
+      );
     }
   }
 
-  async create(org_id: string, user_id: string, createEventDto: CreateEventDto) {
+  async create(
+    org_id: string,
+    user_id: string,
+    createEventDto: CreateEventDto,
+  ) {
     const event = this.eventsRepository.create({
       id: randomUUID(),
       org_id,
@@ -85,7 +97,9 @@ export class CalendarService {
       queryBuilder.andWhere('event.type = :type', { type });
     }
 
-    const personal = await queryBuilder.orderBy('event.start_datetime', 'ASC').getMany();
+    const personal = await queryBuilder
+      .orderBy('event.start_datetime', 'ASC')
+      .getMany();
 
     const personalMapped = personal.map((event) => ({
       ...event,
@@ -97,11 +111,18 @@ export class CalendarService {
     const meetingEvents = (
       type && type !== 'meeting'
         ? []
-        : await this.getMeetingEventsForUser(org_id, user_id, start_date, end_date)
+        : await this.getMeetingEventsForUser(
+            org_id,
+            user_id,
+            start_date,
+            end_date,
+          )
     ) as Array<Record<string, any>>;
 
     const merged = [...personalMapped, ...meetingEvents].sort((a, b) =>
-      String(a.start_datetime || '').localeCompare(String(b.start_datetime || '')),
+      String(a.start_datetime || '').localeCompare(
+        String(b.start_datetime || ''),
+      ),
     );
 
     return {
@@ -116,7 +137,9 @@ export class CalendarService {
     start_date?: string,
     end_date?: string,
   ) {
-    const memberships = await this.participantsRepository.find({ where: { user_id } });
+    const memberships = await this.participantsRepository.find({
+      where: { user_id },
+    });
     const memberMeetingIds = memberships.map((m) => m.meeting_id);
 
     const meetings = await this.meetingsRepository.find({ where: { org_id } });
@@ -130,9 +153,7 @@ export class CalendarService {
           m.scheduled_at ||
           (m.date && m.start_time ? `${m.date}T${m.start_time}:00.000Z` : null);
         const end =
-          m.date && m.end_time
-            ? `${m.date}T${m.end_time}:00.000Z`
-            : start;
+          m.date && m.end_time ? `${m.date}T${m.end_time}:00.000Z` : start;
         if (!start) return null;
 
         if (start_date && end_date) {
@@ -179,7 +200,8 @@ export class CalendarService {
     }
 
     const isOwner = event.created_by === user_id;
-    const isAttendee = Array.isArray(event.attendees) && event.attendees.includes(user_id);
+    const isAttendee =
+      Array.isArray(event.attendees) && event.attendees.includes(user_id);
     if (!isOwner && !isAttendee) {
       throw new ForbiddenException('You do not have access to this event');
     }
@@ -190,9 +212,16 @@ export class CalendarService {
     };
   }
 
-  async update(id: string, org_id: string, user_id: string, updateData: Partial<CalendarEvent>) {
+  async update(
+    id: string,
+    org_id: string,
+    user_id: string,
+    updateData: Partial<CalendarEvent>,
+  ) {
     if (id.startsWith('meeting:')) {
-      throw new ForbiddenException('Invited meetings cannot be edited from your calendar');
+      throw new ForbiddenException(
+        'Invited meetings cannot be edited from your calendar',
+      );
     }
 
     const event = await this.eventsRepository.findOne({
@@ -204,7 +233,13 @@ export class CalendarService {
     }
     this.assertOwns(event, user_id);
 
-    const { id: _id, org_id: _org, created_by: _by, created_at: _at, ...safe } = updateData as any;
+    const {
+      id: _id,
+      org_id: _org,
+      created_by: _by,
+      created_at: _at,
+      ...safe
+    } = updateData as any;
     if (safe.attendees !== undefined) {
       safe.attendees = this.normalizeAttendees(safe.attendees, user_id);
     }
@@ -219,7 +254,9 @@ export class CalendarService {
 
   async remove(id: string, org_id: string, user_id: string) {
     if (id.startsWith('meeting:')) {
-      throw new ForbiddenException('Invited meetings cannot be deleted from your calendar');
+      throw new ForbiddenException(
+        'Invited meetings cannot be deleted from your calendar',
+      );
     }
 
     const event = await this.eventsRepository.findOne({
@@ -240,7 +277,12 @@ export class CalendarService {
   }
 
   /** Alias kept for /events/my */
-  async getUserEvents(org_id: string, user_id: string, start_date?: string, end_date?: string) {
+  async getUserEvents(
+    org_id: string,
+    user_id: string,
+    start_date?: string,
+    end_date?: string,
+  ) {
     return this.findAll(org_id, user_id, start_date, end_date);
   }
 }

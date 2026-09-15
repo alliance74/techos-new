@@ -13,7 +13,10 @@ export class CloudinaryService {
     });
   }
 
-  async uploadFile(file: Express.Multer.File, folder: string = 'techos'): Promise<any> {
+  async uploadFile(
+    file: Express.Multer.File,
+    folder: string = 'techos',
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -30,7 +33,10 @@ export class CloudinaryService {
     });
   }
 
-  async uploadImage(file: Express.Multer.File, folder: string = 'techos/images'): Promise<string> {
+  async uploadImage(
+    file: Express.Multer.File,
+    folder: string = 'techos/images',
+  ): Promise<string> {
     const result = await this.uploadFile(file, folder);
     return result.secure_url;
   }
@@ -39,7 +45,10 @@ export class CloudinaryService {
     return cloudinary.uploader.destroy(publicId);
   }
 
-  async uploadMultiple(files: Express.Multer.File[], folder: string = 'techos'): Promise<string[]> {
+  async uploadMultiple(
+    files: Express.Multer.File[],
+    folder: string = 'techos',
+  ): Promise<string[]> {
     const uploadPromises = files.map((file) => this.uploadImage(file, folder));
     return Promise.all(uploadPromises);
   }

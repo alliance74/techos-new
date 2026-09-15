@@ -22,7 +22,10 @@ export class CrmController {
 
   // Contacts
   @Post('contacts')
-  createContact(@CurrentUser() user: any, @Body() createContactDto: CreateContactDto) {
+  createContact(
+    @CurrentUser() user: any,
+    @Body() createContactDto: CreateContactDto,
+  ) {
     return this.crmService.createContact(user.org_id, createContactDto);
   }
 
@@ -37,7 +40,11 @@ export class CrmController {
   }
 
   @Put('contacts/:id')
-  updateContact(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  updateContact(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.crmService.updateContact(id, user.org_id, updateData);
   }
 
@@ -68,7 +75,11 @@ export class CrmController {
   }
 
   @Put('deals/:id')
-  updateDeal(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  updateDeal(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.crmService.updateDeal(id, user.org_id, updateData, user);
   }
 
@@ -87,13 +98,18 @@ export class CrmController {
   async getLeadScores(@CurrentUser() user: any) {
     const contacts = await this.crmService.findAllContacts(user.org_id);
     const scores = await Promise.all(
-      (contacts.data || []).map((contact: any) => this.crmService.scoreContact(contact.id, user.org_id)),
+      (contacts.data || []).map((contact: any) =>
+        this.crmService.scoreContact(contact.id, user.org_id),
+      ),
     );
     return { success: true, data: scores.map((entry) => entry.data) };
   }
 
   @Post('lead-scores/:contactId/calculate')
-  calculateLeadScore(@CurrentUser() user: any, @Param('contactId') contactId: string) {
+  calculateLeadScore(
+    @CurrentUser() user: any,
+    @Param('contactId') contactId: string,
+  ) {
     return this.crmService.scoreContact(contactId, user.org_id);
   }
 

@@ -49,14 +49,16 @@ export class GoalsService {
     return goals.map((goal) => {
       const owner = ownerMap.get(goal.owner_id);
       const owner_name = owner
-        ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || owner.email
+        ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() ||
+          owner.email
         : '—';
       return { ...goal, owner_name };
     });
   }
 
   async findAll(org_id: string, filters?: any) {
-    const query = this.goalRepository.createQueryBuilder('goal')
+    const query = this.goalRepository
+      .createQueryBuilder('goal')
       .where('goal.org_id = :org_id', { org_id });
 
     if (filters?.type) {
@@ -68,7 +70,9 @@ export class GoalsService {
     }
 
     if (filters?.owner_id) {
-      query.andWhere('goal.owner_id = :owner_id', { owner_id: filters.owner_id });
+      query.andWhere('goal.owner_id = :owner_id', {
+        owner_id: filters.owner_id,
+      });
     }
 
     if (filters?.quarter) {
@@ -76,7 +80,9 @@ export class GoalsService {
     }
 
     if (filters?.parent_goal_id) {
-      query.andWhere('goal.parent_goal_id = :parent_goal_id', { parent_goal_id: filters.parent_goal_id });
+      query.andWhere('goal.parent_goal_id = :parent_goal_id', {
+        parent_goal_id: filters.parent_goal_id,
+      });
     }
 
     query.orderBy('goal.created_at', 'DESC');
@@ -99,16 +105,21 @@ export class GoalsService {
       where: { parent_goal_id: id, org_id },
     });
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         ...goal,
         child_goals: childGoals,
-      }
+      },
     };
   }
 
-  async update(id: string, org_id: string, updateDto: UpdateGoalDto, actor?: any) {
+  async update(
+    id: string,
+    org_id: string,
+    updateDto: UpdateGoalDto,
+    actor?: any,
+  ) {
     const goal = await this.goalRepository.findOne({
       where: { id, org_id },
     });
@@ -123,7 +134,10 @@ export class GoalsService {
         const krProgress = (kr.current / kr.target) * 100;
         return sum + krProgress;
       }, 0);
-      updateDto.progress = Math.min(100, totalProgress / updateDto.key_results.length);
+      updateDto.progress = Math.min(
+        100,
+        totalProgress / updateDto.key_results.length,
+      );
     }
 
     Object.assign(goal, updateDto);
@@ -163,7 +177,12 @@ export class GoalsService {
     return { success: true, message: 'Goal deleted successfully' };
   }
 
-  async updateKeyResult(id: string, org_id: string, keyResultIndex: number, current: number) {
+  async updateKeyResult(
+    id: string,
+    org_id: string,
+    keyResultIndex: number,
+    current: number,
+  ) {
     const goal = await this.goalRepository.findOne({
       where: { id, org_id },
     });
@@ -208,21 +227,22 @@ export class GoalsService {
               where: { org_id, parent_goal_id: deptGoal.id },
             });
             return { ...deptGoal, team_goals: teamGoals };
-          })
+          }),
         );
 
         return {
           ...companyGoal,
           department_goals: departmentWithTeamGoals,
         };
-      })
+      }),
     );
 
     return { success: true, data: alignment };
   }
 
   async getProgressReport(org_id: string, quarter?: string) {
-    const query = this.goalRepository.createQueryBuilder('goal')
+    const query = this.goalRepository
+      .createQueryBuilder('goal')
       .where('goal.org_id = :org_id', { org_id })
       .andWhere('goal.status = :status', { status: 'active' });
 
@@ -235,22 +255,25 @@ export class GoalsService {
     const report = {
       total_goals: goals.length,
       by_type: {
-        company: goals.filter(g => g.type === 'company').length,
-        department: goals.filter(g => g.type === 'department').length,
-        team: goals.filter(g => g.type === 'team').length,
-        individual: goals.filter(g => g.type === 'individual').length,
+        company: goals.filter((g) => g.type === 'company').length,
+        department: goals.filter((g) => g.type === 'department').length,
+        team: goals.filter((g) => g.type === 'team').length,
+        individual: goals.filter((g) => g.type === 'individual').length,
       },
-      average_progress: goals.reduce((sum, g) => sum + g.progress, 0) / goals.length || 0,
-      on_track: goals.filter(g => g.progress >= 70).length,
-      at_risk: goals.filter(g => g.progress < 70 && g.progress >= 40).length,
-      off_track: goals.filter(g => g.progress < 40).length,
+      average_progress:
+        goals.reduce((sum, g) => sum + g.progress, 0) / goals.length || 0,
+      on_track: goals.filter((g) => g.progress >= 70).length,
+      at_risk: goals.filter((g) => g.progress < 70 && g.progress >= 40).length,
+      off_track: goals.filter((g) => g.progress < 40).length,
     };
 
     return { success: true, data: report };
   }
 
   async getKeyResults(goal_id: string, org_id: string) {
-    const goal = await this.goalRepository.findOne({ where: { id: goal_id, org_id } });
+    const goal = await this.goalRepository.findOne({
+      where: { id: goal_id, org_id },
+    });
     if (!goal) {
       throw new NotFoundException('Goal not found');
     }
@@ -258,7 +281,9 @@ export class GoalsService {
   }
 
   async createKeyResult(org_id: string, createDto: any) {
-    const goal = await this.goalRepository.findOne({ where: { id: createDto.goal_id, org_id } });
+    const goal = await this.goalRepository.findOne({
+      where: { id: createDto.goal_id, org_id },
+    });
     if (!goal) {
       throw new NotFoundException('Goal not found');
     }
@@ -276,7 +301,11 @@ export class GoalsService {
     return { success: true, data: keyResult };
   }
 
-  async updateKeyResultById(org_id: string, key_result_id: string, updateDto: any) {
+  async updateKeyResultById(
+    org_id: string,
+    key_result_id: string,
+    updateDto: any,
+  ) {
     const goals = await this.goalRepository.find({ where: { org_id } });
     const goal = goals.find((entry) =>
       (entry.key_results || []).some((kr: any) => kr.id === key_result_id),
@@ -306,7 +335,9 @@ export class GoalsService {
       throw new NotFoundException('Key result not found');
     }
 
-    goal.key_results = (goal.key_results || []).filter((kr: any) => kr.id !== key_result_id);
+    goal.key_results = (goal.key_results || []).filter(
+      (kr: any) => kr.id !== key_result_id,
+    );
     await this.goalRepository.save(goal);
     return { success: true, message: 'Key result deleted successfully' };
   }

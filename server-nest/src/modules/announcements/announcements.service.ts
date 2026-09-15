@@ -15,7 +15,11 @@ export class AnnouncementsService {
     private eventsGateway: EventsGateway,
   ) {}
 
-  async create(org_id: string, author_id: string, createDto: CreateAnnouncementDto) {
+  async create(
+    org_id: string,
+    author_id: string,
+    createDto: CreateAnnouncementDto,
+  ) {
     const announcement = this.announcementRepository.create({
       id: randomUUID(),
       org_id,
@@ -27,25 +31,35 @@ export class AnnouncementsService {
     await this.announcementRepository.save(announcement);
 
     // Send real-time notification to all users in organization
-    this.eventsGateway.sendToOrganization(org_id, 'announcement:new', announcement);
+    this.eventsGateway.sendToOrganization(
+      org_id,
+      'announcement:new',
+      announcement,
+    );
 
     return { success: true, data: announcement };
   }
 
   async findAll(org_id: string, filters?: any) {
-    const query = this.announcementRepository.createQueryBuilder('announcement')
+    const query = this.announcementRepository
+      .createQueryBuilder('announcement')
       .where('announcement.org_id = :org_id', { org_id });
 
     if (filters?.priority) {
-      query.andWhere('announcement.priority = :priority', { priority: filters.priority });
+      query.andWhere('announcement.priority = :priority', {
+        priority: filters.priority,
+      });
     }
 
     if (filters?.is_pinned !== undefined) {
-      query.andWhere('announcement.is_pinned = :is_pinned', { is_pinned: filters.is_pinned });
+      query.andWhere('announcement.is_pinned = :is_pinned', {
+        is_pinned: filters.is_pinned,
+      });
     }
 
     // Pinned announcements first, then by creation date
-    query.orderBy('announcement.is_pinned', 'DESC')
+    query
+      .orderBy('announcement.is_pinned', 'DESC')
       .addOrderBy('announcement.created_at', 'DESC');
 
     const announcements = await query.getMany();
@@ -77,7 +91,11 @@ export class AnnouncementsService {
     await this.announcementRepository.save(announcement);
 
     // Send real-time update
-    this.eventsGateway.sendToOrganization(org_id, 'announcement:updated', announcement);
+    this.eventsGateway.sendToOrganization(
+      org_id,
+      'announcement:updated',
+      announcement,
+    );
 
     return { success: true, data: announcement };
   }
@@ -95,7 +113,11 @@ export class AnnouncementsService {
     await this.announcementRepository.save(announcement);
 
     // Send real-time update
-    this.eventsGateway.sendToOrganization(org_id, 'announcement:updated', announcement);
+    this.eventsGateway.sendToOrganization(
+      org_id,
+      'announcement:updated',
+      announcement,
+    );
 
     return { success: true, data: announcement };
   }
@@ -111,7 +133,11 @@ export class AnnouncementsService {
 
     announcement.is_pinned = isPinned;
     await this.announcementRepository.save(announcement);
-    this.eventsGateway.sendToOrganization(org_id, 'announcement:updated', announcement);
+    this.eventsGateway.sendToOrganization(
+      org_id,
+      'announcement:updated',
+      announcement,
+    );
 
     return { success: true, data: announcement };
   }
@@ -128,7 +154,9 @@ export class AnnouncementsService {
     await this.announcementRepository.remove(announcement);
 
     // Send real-time deletion notification
-    this.eventsGateway.sendToOrganization(org_id, 'announcement:deleted', { id });
+    this.eventsGateway.sendToOrganization(org_id, 'announcement:deleted', {
+      id,
+    });
 
     return { success: true, message: 'Announcement deleted successfully' };
   }

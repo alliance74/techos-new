@@ -11,7 +11,17 @@ import { Expense } from '../../entities/expense.entity';
 import { KPI } from '../../entities/kpi.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Report, Project, Task, Bug, Invoice, Expense, KPI])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Report,
+      Project,
+      Task,
+      Bug,
+      Invoice,
+      Expense,
+      KPI,
+    ]),
+  ],
   controllers: [ReportsController],
   providers: [ReportsService],
   exports: [ReportsService],

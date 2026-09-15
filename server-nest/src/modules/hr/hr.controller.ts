@@ -22,7 +22,10 @@ export class HrController {
 
   // Employees
   @Post('employees')
-  createEmployee(@CurrentUser() user: any, @Body() createEmployeeDto: CreateEmployeeDto) {
+  createEmployee(
+    @CurrentUser() user: any,
+    @Body() createEmployeeDto: CreateEmployeeDto,
+  ) {
     return this.hrService.createEmployee(user.org_id, createEmployeeDto);
   }
 
@@ -42,7 +45,11 @@ export class HrController {
   }
 
   @Put('employees/:id')
-  updateEmployee(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  updateEmployee(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.hrService.updateEmployee(id, user.org_id, updateData, user);
   }
 
@@ -53,8 +60,15 @@ export class HrController {
 
   // Leave Requests
   @Post('leaves')
-  createLeaveRequest(@CurrentUser() user: any, @Body() createLeaveRequestDto: CreateLeaveRequestDto) {
-    return this.hrService.createLeaveRequest(user.org_id, user, createLeaveRequestDto);
+  createLeaveRequest(
+    @CurrentUser() user: any,
+    @Body() createLeaveRequestDto: CreateLeaveRequestDto,
+  ) {
+    return this.hrService.createLeaveRequest(
+      user.org_id,
+      user,
+      createLeaveRequestDto,
+    );
   }
 
   @Get('leaves')
@@ -69,7 +83,12 @@ export class HrController {
 
   @Post('leaves/:id/approve')
   approveLeaveRequest(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.hrService.approveLeaveRequest(id, user.org_id, user.id, user.role);
+    return this.hrService.approveLeaveRequest(
+      id,
+      user.org_id,
+      user.id,
+      user.role,
+    );
   }
 
   @Post('leaves/:id/reject')
@@ -78,7 +97,13 @@ export class HrController {
     @Param('id') id: string,
     @Body() body: { rejection_reason?: string },
   ) {
-    return this.hrService.rejectLeaveRequest(id, user.org_id, user.id, user.role, body.rejection_reason);
+    return this.hrService.rejectLeaveRequest(
+      id,
+      user.org_id,
+      user.id,
+      user.role,
+      body.rejection_reason,
+    );
   }
 
   @Delete('leaves/:id')

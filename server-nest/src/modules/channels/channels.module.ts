@@ -8,7 +8,10 @@ import { User } from '../../entities/user.entity';
 import { MessagesModule } from '../messages/messages.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Channel, ChannelMember, User]), MessagesModule],
+  imports: [
+    TypeOrmModule.forFeature([Channel, ChannelMember, User]),
+    MessagesModule,
+  ],
   controllers: [ChannelsController],
   providers: [ChannelsService],
   exports: [ChannelsService],

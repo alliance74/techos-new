@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, UnauthorizedException, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -49,7 +55,9 @@ export class AuthService implements OnModuleInit {
   private async purgeNonCeoUsers(orgId: string) {
     if (!this.shouldKeepCeoOnly()) return;
 
-    const extras = await this.usersRepository.find({ where: { org_id: orgId } });
+    const extras = await this.usersRepository.find({
+      where: { org_id: orgId },
+    });
     const toRemove = extras.filter(
       (u) => (u.email || '').toLowerCase() !== SEEDED_CEO_EMAIL,
     );
@@ -110,24 +118,29 @@ export class AuthService implements OnModuleInit {
         status: 'active',
       });
       await this.usersRepository.save(ceo);
-      this.logger.log(`Seeded CEO account: ${SEEDED_CEO_EMAIL} / ${SEEDED_CEO_PASSWORD}`);
+      this.logger.log(
+        `Seeded CEO account: ${SEEDED_CEO_EMAIL} / ${SEEDED_CEO_PASSWORD}`,
+      );
     }
 
     await this.purgeNonCeoUsers(organization.id);
   }
 
   async register(registerDto: RegisterDto) {
-    const { email, password, firstName, lastName, role, organizationName } = registerDto;
+    const { email, password, firstName, lastName, role, organizationName } =
+      registerDto;
 
     // Check if user exists
-    const existingUser = await this.usersRepository.findOne({ where: { email } });
+    const existingUser = await this.usersRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
 
     // Get or create the single organization
     let organization = await this.organizationsRepository.findOne({
-      where: { slug: 'techos-company' } // Single organization for all users
+      where: { slug: 'techos-company' }, // Single organization for all users
     });
 
     if (!organization) {

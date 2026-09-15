@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 import { AiMessage } from './ai-message.entity';
 
@@ -35,7 +44,7 @@ export class AiConversation {
   @Column({ type: 'boolean', default: false })
   archived: boolean;
 
-  @OneToMany(() => AiMessage, message => message.conversation)
+  @OneToMany(() => AiMessage, (message) => message.conversation)
   messages: AiMessage[];
 
   @CreateDateColumn({ name: 'created_at' })

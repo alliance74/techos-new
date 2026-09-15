@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AnalyticsService } from './analytics.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -15,8 +24,8 @@ export class AnalyticsController {
 
   @Get('projects')
   getProjectAnalytics(
-    @CurrentUser() user: any, 
-    @Query('project_id') project_id?: string
+    @CurrentUser() user: any,
+    @Query('project_id') project_id?: string,
   ) {
     return this.analyticsService.getProjectAnalytics(user.org_id, project_id);
   }
@@ -27,7 +36,11 @@ export class AnalyticsController {
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
   ) {
-    return this.analyticsService.getTeamProductivity(user.org_id, start_date, end_date);
+    return this.analyticsService.getTeamProductivity(
+      user.org_id,
+      start_date,
+      end_date,
+    );
   }
 
   @Get('sprints')
@@ -49,7 +62,11 @@ export class AnalyticsController {
     @Query('user_id') user_id?: string,
     @Query('project_id') project_id?: string,
   ) {
-    return this.analyticsService.getTimeTracking(user.org_id, user_id, project_id);
+    return this.analyticsService.getTimeTracking(
+      user.org_id,
+      user_id,
+      project_id,
+    );
   }
 
   // KPI endpoints

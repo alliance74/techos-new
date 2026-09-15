@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -30,7 +34,9 @@ export class HrService {
     const user = await this.usersRepository.findOne({
       where: { id: createEmployeeDto.user_id, org_id },
     });
-    const roleLabel = (user?.role || 'team member').toString().replace(/_/g, ' ');
+    const roleLabel = (user?.role || 'team member')
+      .toString()
+      .replace(/_/g, ' ');
 
     const employee = this.employeesRepository.create({
       id: randomUUID(),
@@ -59,7 +65,9 @@ export class HrService {
       order: { created_at: 'DESC' },
     });
 
-    const userIds = [...new Set(employees.map((e) => e.user_id).filter(Boolean))];
+    const userIds = [
+      ...new Set(employees.map((e) => e.user_id).filter(Boolean)),
+    ];
     const users = userIds.length
       ? await this.usersRepository.find({ where: { id: In(userIds) } })
       : [];
@@ -76,7 +84,11 @@ export class HrService {
     };
   }
 
-  private mapEmployeeRow(row: Employee, user?: User | null, manager?: User | null) {
+  private mapEmployeeRow(
+    row: Employee,
+    user?: User | null,
+    manager?: User | null,
+  ) {
     return {
       id: row.id,
       org_id: row.org_id,
@@ -149,11 +161,19 @@ export class HrService {
     if (!employee) {
       throw new NotFoundException('Employee not found');
     }
-    const data = await this.activityLogService.listForActor(org_id, employee.user_id);
+    const data = await this.activityLogService.listForActor(
+      org_id,
+      employee.user_id,
+    );
     return { success: true, data };
   }
 
-  async updateEmployee(id: string, org_id: string, updateData: Partial<Employee>, actor?: any) {
+  async updateEmployee(
+    id: string,
+    org_id: string,
+    updateData: Partial<Employee>,
+    actor?: any,
+  ) {
     const employee = await this.employeesRepository.findOne({
       where: { id, org_id },
     });
@@ -217,7 +237,9 @@ export class HrService {
       throw new NotFoundException('Employee not found');
     }
 
-    const user = await this.usersRepository.findOne({ where: { id: employee.user_id } });
+    const user = await this.usersRepository.findOne({
+      where: { id: employee.user_id },
+    });
     const displayName =
       `${user?.first_name || ''} ${user?.last_name || ''}`.trim() ||
       user?.email ||
@@ -241,7 +263,11 @@ export class HrService {
   }
 
   // Leave Requests
-  async createLeaveRequest(org_id: string, actor: any, createLeaveRequestDto: CreateLeaveRequestDto) {
+  async createLeaveRequest(
+    org_id: string,
+    actor: any,
+    createLeaveRequestDto: CreateLeaveRequestDto,
+  ) {
     // Get employee record
     const employee = await this.employeesRepository.findOne({
       where: { user_id: actor?.id, org_id },
@@ -298,13 +324,19 @@ export class HrService {
       order: { created_at: 'DESC' },
     });
 
-    const employeeIds = [...new Set(leaveRequests.map((l) => String(l.employee_id)).filter(Boolean))];
+    const employeeIds = [
+      ...new Set(
+        leaveRequests.map((l) => String(l.employee_id)).filter(Boolean),
+      ),
+    ];
     const employees = employeeIds.length
       ? await this.employeesRepository.find({ where: { id: In(employeeIds) } })
       : [];
     const employeeMap = new Map(employees.map((e) => [String(e.id), e]));
 
-    const userIds = [...new Set(employees.map((e) => String(e.user_id)).filter(Boolean))];
+    const userIds = [
+      ...new Set(employees.map((e) => String(e.user_id)).filter(Boolean)),
+    ];
     const users = userIds.length
       ? await this.usersRepository.find({ where: { id: In(userIds) } })
       : [];
@@ -358,10 +390,17 @@ export class HrService {
     };
   }
 
-  async approveLeaveRequest(id: string, org_id: string, user_id: string, user_role: string) {
+  async approveLeaveRequest(
+    id: string,
+    org_id: string,
+    user_id: string,
+    user_role: string,
+  ) {
     // Check if user has permission (CEO handles HR operations)
     if (![UserRole.CEO].includes(user_role as UserRole)) {
-      throw new ForbiddenException('You do not have permission to approve leave requests');
+      throw new ForbiddenException(
+        'You do not have permission to approve leave requests',
+      );
     }
 
     const leaveRequest = await this.leaveRequestsRepository.findOne({
@@ -397,10 +436,18 @@ export class HrService {
     };
   }
 
-  async rejectLeaveRequest(id: string, org_id: string, user_id: string, user_role: string, rejection_reason?: string) {
+  async rejectLeaveRequest(
+    id: string,
+    org_id: string,
+    user_id: string,
+    user_role: string,
+    rejection_reason?: string,
+  ) {
     // Check permission (CEO handles HR operations)
     if (![UserRole.CEO].includes(user_role as UserRole)) {
-      throw new ForbiddenException('You do not have permission to reject leave requests');
+      throw new ForbiddenException(
+        'You do not have permission to reject leave requests',
+      );
     }
 
     const leaveRequest = await this.leaveRequestsRepository.findOne({
@@ -453,8 +500,13 @@ export class HrService {
     });
 
     // Only allow deletion if pending and user owns it
-    if (leaveRequest.status !== 'pending' || (employee && employee.user_id !== user_id)) {
-      throw new ForbiddenException('You can only delete your own pending leave requests');
+    if (
+      leaveRequest.status !== 'pending' ||
+      (employee && employee.user_id !== user_id)
+    ) {
+      throw new ForbiddenException(
+        'You can only delete your own pending leave requests',
+      );
     }
 
     await this.leaveRequestsRepository.remove(leaveRequest);
@@ -466,7 +518,11 @@ export class HrService {
   }
 
   // Helper methods
-  private async notifyLeaveRequestCreated(org_id: string, employee: Employee, leaveRequest: LeaveRequest) {
+  private async notifyLeaveRequestCreated(
+    org_id: string,
+    employee: Employee,
+    leaveRequest: LeaveRequest,
+  ) {
     // Notify manager
     if (employee.manager_id) {
       await this.notificationsService.create(org_id, {

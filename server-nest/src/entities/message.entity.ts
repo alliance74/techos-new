@@ -1,4 +1,10 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('messages')
 export class Message {
@@ -41,4 +47,3 @@ export class Message {
   @UpdateDateColumn()
   updated_at: Date;
 }
-

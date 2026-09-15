@@ -41,7 +41,10 @@ export class ProjectsService {
     private activityLogService: ActivityLogService,
   ) {}
 
-  private assertCanView(project: Project, user?: { id?: string; role?: string } | null) {
+  private assertCanView(
+    project: Project,
+    user?: { id?: string; role?: string } | null,
+  ) {
     assertCanViewProject(project, user);
   }
 
@@ -82,7 +85,8 @@ export class ProjectsService {
     if (!start_date || !end_date) return 0;
     const start = new Date(start_date).getTime();
     const end = new Date(end_date).getTime();
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)
+      return 0;
     const now = Date.now();
     if (now <= start) return 0;
     if (now >= end) return 100;
@@ -105,7 +109,11 @@ export class ProjectsService {
     };
   }
 
-  async findAll(org_id: string, user?: { id?: string; role?: string } | null, status?: string) {
+  async findAll(
+    org_id: string,
+    user?: { id?: string; role?: string } | null,
+    status?: string,
+  ) {
     const where: any = { org_id };
     if (status) {
       where.status = status;
@@ -137,7 +145,11 @@ export class ProjectsService {
     };
   }
 
-  async findOne(id: string, org_id: string, user?: { id?: string; role?: string } | null) {
+  async findOne(
+    id: string,
+    org_id: string,
+    user?: { id?: string; role?: string } | null,
+  ) {
     const project = await this.projectsRepository.findOne({
       where: { id, org_id },
     });
@@ -180,9 +192,10 @@ export class ProjectsService {
     }
     this.assertCanView(project, actor);
 
-    const { client_name, visible_to_roles, ...rest } = updateProjectDto as UpdateProjectDto & {
-      client_name?: string;
-    };
+    const { client_name, visible_to_roles, ...rest } =
+      updateProjectDto as UpdateProjectDto & {
+        client_name?: string;
+      };
     Object.assign(project, rest);
     if (client_name !== undefined) {
       project.metadata = { ...(project.metadata || {}), client_name };
@@ -239,7 +252,11 @@ export class ProjectsService {
     };
   }
 
-  async getProjectStats(id: string, org_id: string, user?: { id?: string; role?: string } | null) {
+  async getProjectStats(
+    id: string,
+    org_id: string,
+    user?: { id?: string; role?: string } | null,
+  ) {
     const project = await this.projectsRepository.findOne({
       where: { id, org_id },
     });
@@ -256,10 +273,18 @@ export class ProjectsService {
     const stats = {
       total_tasks: tasks.length,
       completed_tasks: tasks.filter((t) => t.status === 'done').length,
-      in_progress_tasks: tasks.filter((t) => t.status === 'in-progress' || t.status === 'in_progress').length,
+      in_progress_tasks: tasks.filter(
+        (t) => t.status === 'in-progress' || t.status === 'in_progress',
+      ).length,
       todo_tasks: tasks.filter((t) => t.status === 'todo').length,
-      total_estimated_hours: tasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0),
-      total_logged_hours: tasks.reduce((sum, t) => sum + (t.time_logged || 0), 0),
+      total_estimated_hours: tasks.reduce(
+        (sum, t) => sum + (t.estimated_hours || 0),
+        0,
+      ),
+      total_logged_hours: tasks.reduce(
+        (sum, t) => sum + (t.time_logged || 0),
+        0,
+      ),
     };
 
     return {

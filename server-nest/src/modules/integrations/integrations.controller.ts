@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { IntegrationsService } from './integrations.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -30,7 +41,11 @@ export class IntegrationsController {
   }
 
   @Put(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: any) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
     return this.integrationsService.update(id, user.org_id, updateDto);
   }
 
@@ -108,6 +123,10 @@ export class IntegrationsController {
     @Body('channel') channel: string,
     @Body('message') message: string,
   ) {
-    return this.integrationsService.sendSlackNotification(user.org_id, channel, message);
+    return this.integrationsService.sendSlackNotification(
+      user.org_id,
+      channel,
+      message,
+    );
   }
 }

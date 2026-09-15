@@ -1,4 +1,12 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { ProjectAudit } from './project-audit.entity';
 
 @Entity('audit_tasks')
@@ -33,7 +41,9 @@ export class AuditTask {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @ManyToOne(() => ProjectAudit, (audit) => audit.tasks, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ProjectAudit, (audit) => audit.tasks, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'project_audit_id' })
   project_audit: ProjectAudit;
 }

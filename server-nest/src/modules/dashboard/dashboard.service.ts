@@ -53,44 +53,54 @@ export class DashboardService {
     private auditTaskRepository: Repository<AuditTask>,
   ) {}
 
-  async getDeveloperDashboard(user_id: string, org_id: string, user_role?: string) {
-    const [assignedTasks, myBugs, upcomingMeetings, notifications, announcements, visibleProjects] =
-      await Promise.all([
-        this.taskRepository.find({
-          where: [
-            { assignee_id: user_id, org_id },
-          ],
-          order: { due_date: 'ASC', created_at: 'DESC' },
-          take: 50,
-        }),
-        this.bugRepository.find({
-          where: { assignee_id: user_id, org_id },
-          order: { priority: 'DESC', created_at: 'DESC' },
-          take: 20,
-        }),
-        this.meetingRepository
-          .createQueryBuilder('meeting')
-          .where('meeting.org_id = :org_id', { org_id })
-          .andWhere('meeting.scheduled_at >= :now', { now: new Date().toISOString() })
-          .orderBy('meeting.scheduled_at', 'ASC')
-          .take(5)
-          .getMany(),
-        this.notificationRepository.find({
-          where: { user_id, is_read: false },
-          order: { created_at: 'DESC' },
-          take: 10,
-        }),
-        this.announcementRepository.find({
-          where: { org_id },
-          order: { is_pinned: 'DESC', created_at: 'DESC' },
-          take: 3,
-        }),
-        this.projectRepository.find({
-          where: { org_id },
-          order: { created_at: 'DESC' },
-          take: 40,
-        }),
-      ]);
+  async getDeveloperDashboard(
+    user_id: string,
+    org_id: string,
+    user_role?: string,
+  ) {
+    const [
+      assignedTasks,
+      myBugs,
+      upcomingMeetings,
+      notifications,
+      announcements,
+      visibleProjects,
+    ] = await Promise.all([
+      this.taskRepository.find({
+        where: [{ assignee_id: user_id, org_id }],
+        order: { due_date: 'ASC', created_at: 'DESC' },
+        take: 50,
+      }),
+      this.bugRepository.find({
+        where: { assignee_id: user_id, org_id },
+        order: { priority: 'DESC', created_at: 'DESC' },
+        take: 20,
+      }),
+      this.meetingRepository
+        .createQueryBuilder('meeting')
+        .where('meeting.org_id = :org_id', { org_id })
+        .andWhere('meeting.scheduled_at >= :now', {
+          now: new Date().toISOString(),
+        })
+        .orderBy('meeting.scheduled_at', 'ASC')
+        .take(5)
+        .getMany(),
+      this.notificationRepository.find({
+        where: { user_id, is_read: false },
+        order: { created_at: 'DESC' },
+        take: 10,
+      }),
+      this.announcementRepository.find({
+        where: { org_id },
+        order: { is_pinned: 'DESC', created_at: 'DESC' },
+        take: 3,
+      }),
+      this.projectRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+        take: 40,
+      }),
+    ]);
 
     // Apply project role visibility for the signed-in role
     const role = String(user_role || 'software_engineer').toLowerCase();
@@ -98,10 +108,18 @@ export class DashboardService {
       canViewProject(p, { role, id: user_id }),
     );
 
-    const openBugs = myBugs.filter((b) => !/done|closed|resolved/i.test(String(b.status)));
-    const activeTasks = assignedTasks.filter((t) => !/done|completed|closed/i.test(String(t.status)));
-    const inProgress = assignedTasks.filter((t) => /in_progress|in-progress|doing|in progress/i.test(String(t.status)));
-    const todo = assignedTasks.filter((t) => /todo|backlog|open/i.test(String(t.status)));
+    const openBugs = myBugs.filter(
+      (b) => !/done|closed|resolved/i.test(String(b.status)),
+    );
+    const activeTasks = assignedTasks.filter(
+      (t) => !/done|completed|closed/i.test(String(t.status)),
+    );
+    const inProgress = assignedTasks.filter((t) =>
+      /in_progress|in-progress|doing|in progress/i.test(String(t.status)),
+    );
+    const todo = assignedTasks.filter((t) =>
+      /todo|backlog|open/i.test(String(t.status)),
+    );
 
     const activeSprint = await this.sprintRepository.findOne({
       where: { org_id, status: 'active' },
@@ -125,7 +143,8 @@ export class DashboardService {
         },
         projects: {
           total: projects.length,
-          active: projects.filter((p) => /active/i.test(String(p.status))).length,
+          active: projects.filter((p) => /active/i.test(String(p.status)))
+            .length,
         },
         active_sprint: activeSprint,
         upcoming_meetings: upcomingMeetings,
@@ -136,19 +155,36 @@ export class DashboardService {
   }
 
   async getExecutiveDashboard(org_id: string) {
-    const [projectCount, activeProjectCount, goals, announcements, recentMeetings, financials, teamSize] =
-      await Promise.all([
-        this.projectRepository.count({ where: { org_id } }),
-        this.projectRepository.count({ where: { org_id, status: 'active' } }),
-        this.goalRepository.find({ where: { org_id, type: 'company', status: 'active' } }),
-        this.announcementRepository.find({ where: { org_id }, order: { created_at: 'DESC' }, take: 5 }),
-        this.meetingRepository.find({ where: { org_id }, order: { scheduled_at: 'DESC' }, take: 5 }),
-        Promise.all([
-          this.invoiceRepository.find({ where: { org_id } }),
-          this.expenseRepository.find({ where: { org_id } }),
-        ]),
-        this.usersRepository.count({ where: { org_id } }),
-      ]);
+    const [
+      projectCount,
+      activeProjectCount,
+      goals,
+      announcements,
+      recentMeetings,
+      financials,
+      teamSize,
+    ] = await Promise.all([
+      this.projectRepository.count({ where: { org_id } }),
+      this.projectRepository.count({ where: { org_id, status: 'active' } }),
+      this.goalRepository.find({
+        where: { org_id, type: 'company', status: 'active' },
+      }),
+      this.announcementRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+        take: 5,
+      }),
+      this.meetingRepository.find({
+        where: { org_id },
+        order: { scheduled_at: 'DESC' },
+        take: 5,
+      }),
+      Promise.all([
+        this.invoiceRepository.find({ where: { org_id } }),
+        this.expenseRepository.find({ where: { org_id } }),
+      ]),
+      this.usersRepository.count({ where: { org_id } }),
+    ]);
 
     const [invoices, expenses] = financials;
     // Revenue = paid invoices only (drafts/sent are not recognized revenue)
@@ -184,7 +220,8 @@ export class DashboardService {
         },
         goals: {
           total: goals.length,
-          average_progress: goals.reduce((sum, g) => sum + g.progress, 0) / goals.length || 0,
+          average_progress:
+            goals.reduce((sum, g) => sum + g.progress, 0) / goals.length || 0,
         },
         financials: {
           total_revenue: totalRevenue,
@@ -205,9 +242,20 @@ export class DashboardService {
 
   async getProductDashboard(org_id: string) {
     const [features, bugs, upcomingReleases] = await Promise.all([
-      this.taskRepository.find({ where: { org_id }, order: { created_at: 'DESC' }, take: 10 }),
-      this.bugRepository.find({ where: { org_id, status: 'open' }, order: { priority: 'DESC' } }),
-      this.meetingRepository.find({ where: { org_id }, order: { scheduled_at: 'ASC' }, take: 5 }),
+      this.taskRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+        take: 10,
+      }),
+      this.bugRepository.find({
+        where: { org_id, status: 'open' },
+        order: { priority: 'DESC' },
+      }),
+      this.meetingRepository.find({
+        where: { org_id },
+        order: { scheduled_at: 'ASC' },
+        take: 5,
+      }),
     ]);
 
     return {
@@ -216,8 +264,8 @@ export class DashboardService {
         features: features,
         bugs: {
           total: bugs.length,
-          critical: bugs.filter(b => b.severity === 'critical').length,
-          high: bugs.filter(b => b.severity === 'high').length,
+          critical: bugs.filter((b) => b.severity === 'critical').length,
+          high: bugs.filter((b) => b.severity === 'high').length,
         },
         upcoming_releases: upcomingReleases,
       },
@@ -226,9 +274,16 @@ export class DashboardService {
 
   async getFinanceDashboard(org_id: string) {
     const [invoices, expenses, budgets] = await Promise.all([
-      this.invoiceRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
-      this.expenseRepository.find({ where: { org_id }, order: { date: 'DESC' } }),
-      this.expenseRepository.createQueryBuilder('expense')
+      this.invoiceRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+      }),
+      this.expenseRepository.find({
+        where: { org_id },
+        order: { date: 'DESC' },
+      }),
+      this.expenseRepository
+        .createQueryBuilder('expense')
         .select('expense.category', 'category')
         .addSelect('SUM(expense.amount)', 'total')
         .where('expense.org_id = :org_id', { org_id })
@@ -238,7 +293,7 @@ export class DashboardService {
 
     const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amount, 0);
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const pendingInvoices = invoices.filter(inv => inv.status === 'pending');
+    const pendingInvoices = invoices.filter((inv) => inv.status === 'pending');
 
     return {
       success: true,
@@ -250,13 +305,14 @@ export class DashboardService {
         },
         invoices: {
           total: invoices.length,
-          paid: invoices.filter(inv => inv.status === 'paid').length,
+          paid: invoices.filter((inv) => inv.status === 'paid').length,
           pending: pendingInvoices.length,
-          overdue: invoices.filter(inv => inv.status === 'overdue').length,
+          overdue: invoices.filter((inv) => inv.status === 'overdue').length,
         },
         expenses: {
           total: totalExpenses,
-          pending_approval: expenses.filter(exp => exp.status === 'pending').length,
+          pending_approval: expenses.filter((exp) => exp.status === 'pending')
+            .length,
         },
         recent_invoices: invoices.slice(0, 5),
         recent_expenses: expenses.slice(0, 5),
@@ -267,8 +323,15 @@ export class DashboardService {
 
   async getHRDashboard(org_id: string) {
     const [leaveRequests, announcements] = await Promise.all([
-      this.leaveRequestRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
-      this.announcementRepository.find({ where: { org_id }, order: { created_at: 'DESC' }, take: 5 }),
+      this.leaveRequestRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+      }),
+      this.announcementRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+        take: 5,
+      }),
     ]);
 
     return {
@@ -276,9 +339,11 @@ export class DashboardService {
       data: {
         leave_requests: {
           total: leaveRequests.length,
-          pending: leaveRequests.filter(lr => lr.status === 'pending').length,
-          approved: leaveRequests.filter(lr => lr.status === 'approved').length,
-          rejected: leaveRequests.filter(lr => lr.status === 'rejected').length,
+          pending: leaveRequests.filter((lr) => lr.status === 'pending').length,
+          approved: leaveRequests.filter((lr) => lr.status === 'approved')
+            .length,
+          rejected: leaveRequests.filter((lr) => lr.status === 'rejected')
+            .length,
         },
         recent_leave_requests: leaveRequests.slice(0, 10),
         announcements: announcements,
@@ -288,13 +353,24 @@ export class DashboardService {
 
   async getCisoDashboard(org_id: string) {
     const [tasks, audits, reports] = await Promise.all([
-      this.auditTaskRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
-      this.projectAuditRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
-      this.reportRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
+      this.auditTaskRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+      }),
+      this.projectAuditRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+      }),
+      this.reportRepository.find({
+        where: { org_id },
+        order: { created_at: 'DESC' },
+      }),
     ]);
 
     const securityReports = reports.filter((report) =>
-      ['security', 'audit', 'compliance', 'risk'].includes((report.type || '').toLowerCase()),
+      ['security', 'audit', 'compliance', 'risk'].includes(
+        (report.type || '').toLowerCase(),
+      ),
     );
 
     return {
@@ -308,8 +384,10 @@ export class DashboardService {
         audits: {
           total: audits.length,
           needed: audits.filter((audit) => audit.status === 'needed').length,
-          in_progress: audits.filter((audit) => audit.status === 'in_progress').length,
-          completed: audits.filter((audit) => audit.status === 'completed').length,
+          in_progress: audits.filter((audit) => audit.status === 'in_progress')
+            .length,
+          completed: audits.filter((audit) => audit.status === 'completed')
+            .length,
         },
         reports: {
           total: securityReports.length,

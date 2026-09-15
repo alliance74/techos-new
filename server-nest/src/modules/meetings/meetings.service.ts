@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -30,7 +35,11 @@ export class MeetingsService {
 
   private userLabel(user?: User | null) {
     if (!user) return null;
-    return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || null;
+    return (
+      `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+      user.email ||
+      null
+    );
   }
 
   private async assertCanAccessMeeting(
@@ -47,19 +56,26 @@ export class MeetingsService {
     }
   }
 
-  async create(org_id: string, actor: { id: string; role?: string }, createMeetingDto: CreateMeetingDto) {
+  async create(
+    org_id: string,
+    actor: { id: string; role?: string },
+    createMeetingDto: CreateMeetingDto,
+  ) {
     assertOrgAdmin(actor, 'create meetings');
 
     const { participant_ids, ...meetingData } = createMeetingDto;
     const viewers = [
       ...new Set(
         (participant_ids || []).filter(
-          (id): id is string => typeof id === 'string' && !!id.trim() && id !== actor.id,
+          (id): id is string =>
+            typeof id === 'string' && !!id.trim() && id !== actor.id,
         ),
       ),
     ];
     if (!viewers.length) {
-      throw new BadRequestException('Select at least one viewer for this meeting');
+      throw new BadRequestException(
+        'Select at least one viewer for this meeting',
+      );
     }
 
     const meeting = this.meetingsRepository.create({
@@ -97,7 +113,11 @@ export class MeetingsService {
     };
   }
 
-  async findAll(org_id: string, user?: { id?: string; role?: string }, filters?: any) {
+  async findAll(
+    org_id: string,
+    user?: { id?: string; role?: string },
+    filters?: any,
+  ) {
     const where: any = { org_id };
 
     if (filters?.status) {
@@ -111,7 +131,9 @@ export class MeetingsService {
         where: { user_id: user.id },
       });
       const allowed = new Set(memberships.map((m) => m.meeting_id));
-      meetings = meetings.filter((m) => allowed.has(m.id) || m.organizer_id === user.id);
+      meetings = meetings.filter(
+        (m) => allowed.has(m.id) || m.organizer_id === user.id,
+      );
     }
 
     const meetingsWithData = await Promise.all(
@@ -143,7 +165,11 @@ export class MeetingsService {
     };
   }
 
-  async findOne(id: string, org_id: string, user?: { id?: string; role?: string }) {
+  async findOne(
+    id: string,
+    org_id: string,
+    user?: { id?: string; role?: string },
+  ) {
     const meeting = await this.meetingsRepository.findOne({
       where: { id, org_id },
     });
@@ -236,7 +262,11 @@ export class MeetingsService {
     };
   }
 
-  async remove(id: string, org_id: string, user?: { id?: string; role?: string }) {
+  async remove(
+    id: string,
+    org_id: string,
+    user?: { id?: string; role?: string },
+  ) {
     assertOrgAdmin(user, 'delete meetings');
     const meeting = await this.meetingsRepository.findOne({
       where: { id, org_id },
@@ -262,7 +292,11 @@ export class MeetingsService {
   }
 
   // Participant Management
-  async addParticipant(meeting_id: string, user_id: string, is_organizer: boolean = false) {
+  async addParticipant(
+    meeting_id: string,
+    user_id: string,
+    is_organizer: boolean = false,
+  ) {
     const participant = this.participantsRepository.create({
       id: randomUUID(),
       meeting_id,
@@ -275,7 +309,11 @@ export class MeetingsService {
     return participant;
   }
 
-  async addParticipants(meeting_id: string, org_id: string, participant_ids: string[]) {
+  async addParticipants(
+    meeting_id: string,
+    org_id: string,
+    participant_ids: string[],
+  ) {
     // Verify meeting exists and belongs to org
     const meeting = await this.meetingsRepository.findOne({
       where: { id: meeting_id, org_id },
@@ -287,7 +325,9 @@ export class MeetingsService {
 
     // Add participants
     await Promise.all(
-      participant_ids.map((userId) => this.addParticipant(meeting_id, userId, false)),
+      participant_ids.map((userId) =>
+        this.addParticipant(meeting_id, userId, false),
+      ),
     );
 
     // Send invites
@@ -367,7 +407,11 @@ export class MeetingsService {
     };
   }
 
-  async updateActionItem(id: string, meeting_id: string, updateData: Partial<MeetingActionItem>) {
+  async updateActionItem(
+    id: string,
+    meeting_id: string,
+    updateData: Partial<MeetingActionItem>,
+  ) {
     const actionItem = await this.actionItemsRepository.findOne({
       where: { id, meeting_id },
     });
@@ -385,8 +429,14 @@ export class MeetingsService {
     };
   }
 
-  async updateActionItemById(id: string, org_id: string, updateData: Partial<MeetingActionItem>) {
-    const actionItem = await this.actionItemsRepository.findOne({ where: { id } });
+  async updateActionItemById(
+    id: string,
+    org_id: string,
+    updateData: Partial<MeetingActionItem>,
+  ) {
+    const actionItem = await this.actionItemsRepository.findOne({
+      where: { id },
+    });
     if (!actionItem) {
       throw new NotFoundException('Action item not found');
     }
@@ -438,7 +488,10 @@ export class MeetingsService {
   }
 
   // Email notifications
-  private async sendMeetingInvites(meeting: Meeting, participant_ids: string[]) {
+  private async sendMeetingInvites(
+    meeting: Meeting,
+    participant_ids: string[],
+  ) {
     const participants = await this.usersRepository.find({
       where: participant_ids.map((id) => ({ id })),
     });
@@ -452,7 +505,7 @@ export class MeetingsService {
         meeting.title,
         participant_id,
         startDateTime,
-        meeting.org_id
+        meeting.org_id,
       );
     }
 

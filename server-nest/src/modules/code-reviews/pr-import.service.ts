@@ -12,15 +12,23 @@ export type ImportedReviewFile = {
 export class PrImportService {
   private readonly logger = new Logger(PrImportService.name);
 
-  parseGithubPrUrl(url: string): { owner: string; repo: string; number: string } | null {
+  parseGithubPrUrl(
+    url: string,
+  ): { owner: string; repo: string; number: string } | null {
     const match = String(url || '').match(
       /github\.com[/:]([^/]+)\/([^/#]+?)(?:\.git)?\/pull\/(\d+)/i,
     );
     if (!match) return null;
-    return { owner: match[1], repo: match[2].replace(/\.git$/i, ''), number: match[3] };
+    return {
+      owner: match[1],
+      repo: match[2].replace(/\.git$/i, ''),
+      number: match[3],
+    };
   }
 
-  parseGitlabMrUrl(url: string): { projectPath: string; number: string; host: string } | null {
+  parseGitlabMrUrl(
+    url: string,
+  ): { projectPath: string; number: string; host: string } | null {
     const match = String(url || '').match(
       /https?:\/\/([^/]+)\/(.+?)\/-\/merge_requests\/(\d+)/i,
     );
@@ -31,21 +39,32 @@ export class PrImportService {
   async importFiles(
     prUrl: string,
     tokens?: { github?: string | null; gitlab?: string | null },
-  ): Promise<{ files: ImportedReviewFile[]; provider: string | null; message?: string }> {
+  ): Promise<{
+    files: ImportedReviewFile[];
+    provider: string | null;
+    message?: string;
+  }> {
     const github = this.parseGithubPrUrl(prUrl);
     if (github) {
-      return this.fetchGithubFiles(github, tokens?.github || process.env.GITHUB_TOKEN);
+      return this.fetchGithubFiles(
+        github,
+        tokens?.github || process.env.GITHUB_TOKEN,
+      );
     }
 
     const gitlab = this.parseGitlabMrUrl(prUrl);
     if (gitlab) {
-      return this.fetchGitlabFiles(gitlab, tokens?.gitlab || process.env.GITLAB_TOKEN);
+      return this.fetchGitlabFiles(
+        gitlab,
+        tokens?.gitlab || process.env.GITLAB_TOKEN,
+      );
     }
 
     return {
       files: [],
       provider: null,
-      message: 'PR URL must be a GitHub pull request or GitLab merge request link',
+      message:
+        'PR URL must be a GitHub pull request or GitLab merge request link',
     };
   }
 
@@ -65,7 +84,9 @@ export class PrImportService {
       const res = await fetch(url, { headers });
       if (!res.ok) {
         const body = await res.text();
-        this.logger.warn(`GitHub PR import failed (${res.status}): ${body.slice(0, 200)}`);
+        this.logger.warn(
+          `GitHub PR import failed (${res.status}): ${body.slice(0, 200)}`,
+        );
         return {
           files: [] as ImportedReviewFile[],
           provider: 'github',
@@ -115,7 +136,7 @@ export class PrImportService {
               : `GitLab returned ${res.status}`,
         };
       }
-      const data = (await res.json()) as any;
+      const data = await res.json();
       const changes = Array.isArray(data?.changes) ? data.changes : [];
       const files = changes.map((c: any) => {
         const patch = String(c.diff || '');
@@ -126,7 +147,11 @@ export class PrImportService {
           additions,
           deletions,
           patch: patch || undefined,
-          status: c.new_file ? 'added' : c.deleted_file ? 'removed' : 'modified',
+          status: c.new_file
+            ? 'added'
+            : c.deleted_file
+              ? 'removed'
+              : 'modified',
         };
       });
       return { files, provider: 'gitlab' as const };

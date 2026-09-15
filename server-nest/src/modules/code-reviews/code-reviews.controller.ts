@@ -49,7 +49,12 @@ export class CodeReviewsController {
     @Param('id') id: string,
     @Body() body: { status?: string },
   ) {
-    return this.codeReviewsService.decide(id, user.org_id, user, body?.status || '');
+    return this.codeReviewsService.decide(
+      id,
+      user.org_id,
+      user,
+      body?.status || '',
+    );
   }
 
   @Post(':id/sync')

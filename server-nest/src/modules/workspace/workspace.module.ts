@@ -7,7 +7,9 @@ import { WorkspaceController } from './workspace.controller';
 import { WorkspaceService } from './workspace.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([WorkspaceRecord, ActivityEvent, RecordComment])],
+  imports: [
+    TypeOrmModule.forFeature([WorkspaceRecord, ActivityEvent, RecordComment]),
+  ],
   controllers: [WorkspaceController],
   providers: [WorkspaceService],
   exports: [WorkspaceService],
