@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, LessThan, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -119,9 +123,15 @@ export class MessagesService {
     }
 
     // Notify other channel members
-    const allMembers = await this.channelMembersRepository.find({ where: { channel_id } });
-    const otherMembers = allMembers.filter(m => m.user_id !== user_id && !(createMessageDto.mentions || []).includes(m.user_id));
-    
+    const allMembers = await this.channelMembersRepository.find({
+      where: { channel_id },
+    });
+    const otherMembers = allMembers.filter(
+      (m) =>
+        m.user_id !== user_id &&
+        !(createMessageDto.mentions || []).includes(m.user_id),
+    );
+
     for (const member of otherMembers) {
       await this.notificationsService.notifyNewMessage(
         channel_id,
@@ -129,7 +139,7 @@ export class MessagesService {
         messageWithUser?.user_name || 'Someone',
         message.content.substring(0, 100),
         member.user_id,
-        channel.org_id
+        channel.org_id,
       );
     }
 
@@ -139,7 +149,12 @@ export class MessagesService {
     };
   }
 
-  async findAll(channel_id: string, user_id: string, limit: number = 50, before?: string) {
+  async findAll(
+    channel_id: string,
+    user_id: string,
+    limit: number = 50,
+    before?: string,
+  ) {
     const channel = await this.channelsRepository.findOne({
       where: { id: channel_id },
     });
@@ -156,7 +171,11 @@ export class MessagesService {
       throw new ForbiddenException('You do not have access to this channel');
     }
 
-    const where: any = { channel_id, is_deleted: false, parent_message_id: IsNull() };
+    const where: any = {
+      channel_id,
+      is_deleted: false,
+      parent_message_id: IsNull(),
+    };
     if (before) {
       where.created_at = LessThan(new Date(before));
     }
@@ -167,7 +186,9 @@ export class MessagesService {
       take: limit,
     });
 
-    const userIds = [...new Set(messages.map((m) => m.user_id).filter(Boolean))];
+    const userIds = [
+      ...new Set(messages.map((m) => m.user_id).filter(Boolean)),
+    ];
     const users = userIds.length
       ? await this.usersRepository.find({ where: { id: In(userIds) } })
       : [];
@@ -268,8 +289,13 @@ export class MessagesService {
       where: { channel_id: message.channel_id, user_id },
     });
 
-    if (message.user_id !== user_id && (!membership || membership.role !== 'admin')) {
-      throw new ForbiddenException('You do not have permission to delete this message');
+    if (
+      message.user_id !== user_id &&
+      (!membership || membership.role !== 'admin')
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to delete this message',
+      );
     }
 
     message.is_deleted = true;
@@ -338,7 +364,9 @@ export class MessagesService {
     }
 
     if (message.reactions && message.reactions[emoji]) {
-      message.reactions[emoji] = message.reactions[emoji].filter((id) => id !== user_id);
+      message.reactions[emoji] = message.reactions[emoji].filter(
+        (id) => id !== user_id,
+      );
 
       if (message.reactions[emoji].length === 0) {
         delete message.reactions[emoji];
@@ -433,7 +461,9 @@ export class MessagesService {
       .limit(50)
       .getMany();
 
-    const userIds = [...new Set(messages.map((m) => m.user_id).filter(Boolean))];
+    const userIds = [
+      ...new Set(messages.map((m) => m.user_id).filter(Boolean)),
+    ];
     const users = userIds.length
       ? await this.usersRepository.find({ where: { id: In(userIds) } })
       : [];
@@ -447,9 +477,13 @@ export class MessagesService {
 
   // Helper methods
   private async getMessageWithUser(message_id: string) {
-    const message = await this.messagesRepository.findOne({ where: { id: message_id } });
+    const message = await this.messagesRepository.findOne({
+      where: { id: message_id },
+    });
     if (!message) return null;
-    const user = await this.usersRepository.findOne({ where: { id: message.user_id } });
+    const user = await this.usersRepository.findOne({
+      where: { id: message.user_id },
+    });
     return this.formatMessage(message, user);
   }
 
@@ -460,8 +494,12 @@ export class MessagesService {
     content: string,
     org_id: string,
   ) {
-    const sender = await this.usersRepository.findOne({ where: { id: sender_id } });
-    const channel = await this.channelsRepository.findOne({ where: { id: channel_id } });
+    const sender = await this.usersRepository.findOne({
+      where: { id: sender_id },
+    });
+    const channel = await this.channelsRepository.findOne({
+      where: { id: channel_id },
+    });
 
     for (const userId of mention_ids) {
       await this.notificationsService.notifyMention(
@@ -469,7 +507,7 @@ export class MessagesService {
         userId,
         channel_id,
         content.substring(0, 100),
-        org_id
+        org_id,
       );
     }
   }

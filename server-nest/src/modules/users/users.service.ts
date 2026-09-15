@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
@@ -32,7 +38,12 @@ export class UsersService {
     return { success: true, data: this.safeUser(user) };
   }
 
-  async update(id: string, org_id: string, actor: any, updateData: Partial<User>) {
+  async update(
+    id: string,
+    org_id: string,
+    actor: any,
+    updateData: Partial<User>,
+  ) {
     const user = await this.usersRepository.findOne({ where: { id, org_id } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -64,7 +75,9 @@ export class UsersService {
       .getOne();
 
     if (existingUser) {
-      throw new ConflictException('A user with this email has already been invited');
+      throw new ConflictException(
+        'A user with this email has already been invited',
+      );
     }
 
     const generatedPassword = this.generateTemporaryPassword();
@@ -84,8 +97,15 @@ export class UsersService {
       await this.usersRepository.save(user);
     } catch (error: any) {
       // Race-safe fallback when unique email constraint fires
-      if (error?.code === '23505' || String(error?.message || '').toLowerCase().includes('unique')) {
-        throw new ConflictException('A user with this email has already been invited');
+      if (
+        error?.code === '23505' ||
+        String(error?.message || '')
+          .toLowerCase()
+          .includes('unique')
+      ) {
+        throw new ConflictException(
+          'A user with this email has already been invited',
+        );
       }
       throw error;
     }
@@ -124,8 +144,14 @@ export class UsersService {
     };
   }
 
-  async updateMyProfile(org_id: string, user_id: string, dto: UpdateMyProfileDto) {
-    const user = await this.usersRepository.findOne({ where: { id: user_id, org_id } });
+  async updateMyProfile(
+    org_id: string,
+    user_id: string,
+    dto: UpdateMyProfileDto,
+  ) {
+    const user = await this.usersRepository.findOne({
+      where: { id: user_id, org_id },
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -136,8 +162,15 @@ export class UsersService {
     return { success: true, data: this.safeUser(user) };
   }
 
-  async updateMyPassword(org_id: string, user_id: string, currentPassword: string, newPassword: string) {
-    const user = await this.usersRepository.findOne({ where: { id: user_id, org_id } });
+  async updateMyPassword(
+    org_id: string,
+    user_id: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.usersRepository.findOne({
+      where: { id: user_id, org_id },
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -150,9 +183,14 @@ export class UsersService {
     return { success: true, message: 'Password updated successfully' };
   }
 
-  async resetPasswordByCeo(id: string, org_id: string, actor: any, newPassword: string) {
+  async resetPasswordByCeo(
+    id: string,
+    org_id: string,
+    actor: any,
+    newPassword: string,
+  ) {
     if (actor.role !== UserRole.CEO) {
-      throw new ForbiddenException('Only CEO can reset other users\' passwords');
+      throw new ForbiddenException("Only CEO can reset other users' passwords");
     }
     const user = await this.usersRepository.findOne({ where: { id, org_id } });
     if (!user) {
@@ -169,7 +207,8 @@ export class UsersService {
   }
 
   private generateTemporaryPassword() {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    const alphabet =
+      'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
     let value = '';
     for (let i = 0; i < 20; i++) {
       value += alphabet[Math.floor(Math.random() * alphabet.length)];

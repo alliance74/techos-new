@@ -178,7 +178,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   sendNotificationToUsers(userIds: string[], notification: any) {
-    userIds.forEach((userId) => this.sendNotificationToUser(userId, notification));
+    userIds.forEach((userId) =>
+      this.sendNotificationToUser(userId, notification),
+    );
   }
 
   sendToOrganization(orgId: string, event: string, data: any) {
@@ -187,7 +189,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('typing')
   handleTyping(
-    @MessageBody() data: { channelId: string; userId?: string; userName: string },
+    @MessageBody()
+    data: { channelId: string; userId?: string; userName: string },
     @ConnectedSocket() client: Socket,
   ) {
     const userId = client.data?.userId || data.userId;

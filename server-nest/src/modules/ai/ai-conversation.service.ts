@@ -1,10 +1,20 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { AiConversation } from '../../entities/ai-conversation.entity';
 import { AiMessage } from '../../entities/ai-message.entity';
 import { AiUsage } from '../../entities/ai-usage.entity';
-import { CreateConversationDto, UpdateConversationDto, SendMessageDto, UpdateMessageDto } from './dto/conversation.dto';
+import {
+  CreateConversationDto,
+  UpdateConversationDto,
+  SendMessageDto,
+  UpdateMessageDto,
+} from './dto/conversation.dto';
 
 // Usage limits per user per month
 const USAGE_LIMITS = {
@@ -30,7 +40,11 @@ export class AiConversationService {
   ) {}
 
   // Check usage limits
-  async checkUsageLimits(userId: string, userRole: string, type: 'message' | 'conversation'): Promise<void> {
+  async checkUsageLimits(
+    userId: string,
+    userRole: string,
+    type: 'message' | 'conversation',
+  ): Promise<void> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -55,23 +69,32 @@ export class AiConversationService {
       await this.usageRepository.save(usage);
     }
 
-    const limits = USAGE_LIMITS[userRole?.toLowerCase().replace(/\s+/g, '_')] || USAGE_LIMITS.default;
+    const limits =
+      USAGE_LIMITS[userRole?.toLowerCase().replace(/\s+/g, '_')] ||
+      USAGE_LIMITS.default;
 
     if (type === 'message' && usage.messagesSent >= limits.messages) {
       throw new ForbiddenException(
-        `Monthly message limit reached (${limits.messages}). Please contact your administrator to increase your limit.`
+        `Monthly message limit reached (${limits.messages}). Please contact your administrator to increase your limit.`,
       );
     }
 
-    if (type === 'conversation' && usage.conversationsCreated >= limits.conversations) {
+    if (
+      type === 'conversation' &&
+      usage.conversationsCreated >= limits.conversations
+    ) {
       throw new ForbiddenException(
-        `Monthly conversation limit reached (${limits.conversations}). Please contact your administrator to increase your limit.`
+        `Monthly conversation limit reached (${limits.conversations}). Please contact your administrator to increase your limit.`,
       );
     }
   }
 
   // Increment usage counters
-  async incrementUsage(userId: string, type: 'message' | 'conversation', tokens: number = 0): Promise<void> {
+  async incrementUsage(
+    userId: string,
+    type: 'message' | 'conversation',
+    tokens: number = 0,
+  ): Promise<void> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -118,7 +141,9 @@ export class AiConversationService {
       },
     });
 
-    const limits = USAGE_LIMITS[userRole?.toLowerCase().replace(/\s+/g, '_')] || USAGE_LIMITS.default;
+    const limits =
+      USAGE_LIMITS[userRole?.toLowerCase().replace(/\s+/g, '_')] ||
+      USAGE_LIMITS.default;
 
     return {
       current: {
@@ -131,8 +156,12 @@ export class AiConversationService {
         conversations: limits.conversations,
       },
       percentage: {
-        messages: Math.round(((usage?.messagesSent || 0) / limits.messages) * 100),
-        conversations: Math.round(((usage?.conversationsCreated || 0) / limits.conversations) * 100),
+        messages: Math.round(
+          ((usage?.messagesSent || 0) / limits.messages) * 100,
+        ),
+        conversations: Math.round(
+          ((usage?.conversationsCreated || 0) / limits.conversations) * 100,
+        ),
       },
       periodStart,
       periodEnd,
@@ -140,7 +169,12 @@ export class AiConversationService {
   }
 
   // Create conversation
-  async createConversation(userId: string, orgId: string, userRole: string, dto: CreateConversationDto) {
+  async createConversation(
+    userId: string,
+    orgId: string,
+    userRole: string,
+    dto: CreateConversationDto,
+  ) {
     await this.checkUsageLimits(userId, userRole, 'conversation');
 
     const conversation = this.conversationRepository.create({
@@ -188,7 +222,7 @@ export class AiConversationService {
 
     // Sort messages by creation date
     conversation.messages = conversation.messages.sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
     );
 
     return {
@@ -198,7 +232,11 @@ export class AiConversationService {
   }
 
   // Update conversation
-  async updateConversation(id: string, userId: string, dto: UpdateConversationDto) {
+  async updateConversation(
+    id: string,
+    userId: string,
+    dto: UpdateConversationDto,
+  ) {
     const conversation = await this.conversationRepository.findOne({
       where: { id, userId },
     });
@@ -237,7 +275,12 @@ export class AiConversationService {
   }
 
   // Add message to conversation
-  async addMessage(conversationId: string, role: 'user' | 'assistant', content: string, tokens: number = 0) {
+  async addMessage(
+    conversationId: string,
+    role: 'user' | 'assistant',
+    content: string,
+    tokens: number = 0,
+  ) {
     const conversation = await this.conversationRepository.findOne({
       where: { id: conversationId },
     });
@@ -265,7 +308,11 @@ export class AiConversationService {
   }
 
   // Update message
-  async updateMessage(messageId: string, userId: string, dto: UpdateMessageDto) {
+  async updateMessage(
+    messageId: string,
+    userId: string,
+    dto: UpdateMessageDto,
+  ) {
     const message = await this.messageRepository.findOne({
       where: { id: messageId },
       relations: ['conversation'],

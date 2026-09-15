@@ -81,7 +81,9 @@ export class CodeReviewsService {
     if (!reviews.length) return [];
     const userIds = [
       ...new Set(
-        reviews.flatMap((r) => [r.author_id, r.reviewer_id].filter(Boolean) as string[]),
+        reviews.flatMap(
+          (r) => [r.author_id, r.reviewer_id].filter(Boolean) as string[],
+        ),
       ),
     ];
     const projectIds = [
@@ -151,7 +153,10 @@ export class CodeReviewsService {
         this.getIntegrationToken(org_id, 'github'),
         this.getIntegrationToken(org_id, 'gitlab'),
       ]);
-      const imported = await this.prImportService.importFiles(dto.pr_url, { github, gitlab });
+      const imported = await this.prImportService.importFiles(dto.pr_url, {
+        github,
+        gitlab,
+      });
       files = imported.files;
       importNote = imported.message;
     }
@@ -220,7 +225,11 @@ export class CodeReviewsService {
     };
   }
 
-  async findAll(org_id: string, user?: { id?: string; role?: string }, filters?: any) {
+  async findAll(
+    org_id: string,
+    user?: { id?: string; role?: string },
+    filters?: any,
+  ) {
     const where: any = { org_id };
     if (filters?.status) where.status = filters.status;
     if (filters?.project_id) where.project_id = filters.project_id;
@@ -233,7 +242,9 @@ export class CodeReviewsService {
     // Non-CEO: only reviews on invited projects (or no project), and involving them
     const role = String(user?.role || '').toLowerCase();
     if (role && role !== 'ceo') {
-      const projects = await this.projectsRepository.find({ where: { org_id } });
+      const projects = await this.projectsRepository.find({
+        where: { org_id },
+      });
       const allowed = new Set(
         projects.filter((p) => canViewProject(p, user)).map((p) => p.id),
       );
@@ -251,14 +262,18 @@ export class CodeReviewsService {
   }
 
   async findOne(id: string, org_id: string) {
-    const review = await this.reviewsRepository.findOne({ where: { id, org_id } });
+    const review = await this.reviewsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!review) throw new NotFoundException('Code review not found');
     const [enriched] = await this.enrich([review]);
     return { success: true, data: enriched };
   }
 
   async update(id: string, org_id: string, actor: any, dto: any) {
-    const review = await this.reviewsRepository.findOne({ where: { id, org_id } });
+    const review = await this.reviewsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!review) throw new NotFoundException('Code review not found');
 
     const prevStatus = review.status;
@@ -298,7 +313,9 @@ export class CodeReviewsService {
   }
 
   async decide(id: string, org_id: string, actor: any, status: string) {
-    if (!['approved', 'changes_requested', 'merged', 'closed'].includes(status)) {
+    if (
+      !['approved', 'changes_requested', 'merged', 'closed'].includes(status)
+    ) {
       throw new BadRequestException('Invalid decision status');
     }
     return this.update(id, org_id, actor, { status });
@@ -311,7 +328,9 @@ export class CodeReviewsService {
     status: string,
   ) {
     if (!review.author_id || review.author_id === actor?.id) return;
-    const author = await this.usersRepository.findOne({ where: { id: review.author_id } });
+    const author = await this.usersRepository.findOne({
+      where: { id: review.author_id },
+    });
     const link = `${roleBasePath(author?.role)}/code-reviews/${review.id}`;
     const label =
       status === 'approved'
@@ -331,9 +350,12 @@ export class CodeReviewsService {
   }
 
   async syncFromPr(id: string, org_id: string, actor: any) {
-    const review = await this.reviewsRepository.findOne({ where: { id, org_id } });
+    const review = await this.reviewsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!review) throw new NotFoundException('Code review not found');
-    if (!review.pr_url) throw new BadRequestException('This review has no PR URL');
+    if (!review.pr_url)
+      throw new BadRequestException('This review has no PR URL');
 
     const [github, gitlab] = await Promise.all([
       this.getIntegrationToken(org_id, 'github'),
@@ -344,7 +366,9 @@ export class CodeReviewsService {
       gitlab,
     });
     if (!imported.files.length) {
-      throw new BadRequestException(imported.message || 'No files imported from PR');
+      throw new BadRequestException(
+        imported.message || 'No files imported from PR',
+      );
     }
     review.files = imported.files;
     review.metadata = {
@@ -367,7 +391,9 @@ export class CodeReviewsService {
   }
 
   async remove(id: string, org_id: string, actor?: any) {
-    const review = await this.reviewsRepository.findOne({ where: { id, org_id } });
+    const review = await this.reviewsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!review) throw new NotFoundException('Code review not found');
     await this.reviewsRepository.remove(review);
     await this.activityLogService.log({

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -8,7 +12,10 @@ import { RecordComment } from '../../entities/record-comment.entity';
 import { CreateWorkspaceRecordDto } from './dto/create-workspace-record.dto';
 import { CreateRecordCommentDto } from './dto/create-record-comment.dto';
 import { ActivityLogService } from '../../common/services/activity-log.service';
-import { assertDeliveryAdmin, isDeliveryAdmin } from '../../common/utils/org-admin';
+import {
+  assertDeliveryAdmin,
+  isDeliveryAdmin,
+} from '../../common/utils/org-admin';
 
 @Injectable()
 export class WorkspaceService {
@@ -24,17 +31,25 @@ export class WorkspaceService {
 
   private isTeamMember(row: WorkspaceRecord, userId?: string) {
     if (!userId) return false;
-    const meta = (row.metadata || {}) as Record<string, any>;
+    const meta = row.metadata || {};
     const leadId = meta.leadId || meta.lead_id;
     const memberIds: string[] = Array.isArray(meta.memberIds)
       ? meta.memberIds
       : Array.isArray(meta.member_ids)
         ? meta.member_ids
         : [];
-    return leadId === userId || memberIds.includes(userId) || row.created_by === userId;
+    return (
+      leadId === userId ||
+      memberIds.includes(userId) ||
+      row.created_by === userId
+    );
   }
 
-  async list(org_id: string, type: string, user?: { id?: string; role?: string }) {
+  async list(
+    org_id: string,
+    type: string,
+    user?: { id?: string; role?: string },
+  ) {
     let data = await this.recordsRepository.find({
       where: { org_id, type },
       order: { updated_at: 'DESC' },
@@ -47,16 +62,32 @@ export class WorkspaceService {
     return { success: true, data: data.map((row) => this.toUi(row)) };
   }
 
-  async get(org_id: string, type: string, id: string, user?: { id?: string; role?: string }) {
-    const row = await this.recordsRepository.findOne({ where: { id, org_id, type } });
+  async get(
+    org_id: string,
+    type: string,
+    id: string,
+    user?: { id?: string; role?: string },
+  ) {
+    const row = await this.recordsRepository.findOne({
+      where: { id, org_id, type },
+    });
     if (!row) throw new NotFoundException('Record not found');
-    if (type === 'teams' && !isDeliveryAdmin(user?.role) && !this.isTeamMember(row, user?.id)) {
+    if (
+      type === 'teams' &&
+      !isDeliveryAdmin(user?.role) &&
+      !this.isTeamMember(row, user?.id)
+    ) {
       throw new ForbiddenException('You are not a member of this team');
     }
     return { success: true, data: this.toUi(row) };
   }
 
-  async create(org_id: string, type: string, actor: any, dto: CreateWorkspaceRecordDto) {
+  async create(
+    org_id: string,
+    type: string,
+    actor: any,
+    dto: CreateWorkspaceRecordDto,
+  ) {
     if (type === 'teams') {
       assertDeliveryAdmin(actor, 'create teams');
     }
@@ -86,8 +117,16 @@ export class WorkspaceService {
     return { success: true, data: this.toUi(row) };
   }
 
-  async update(org_id: string, type: string, id: string, actor: any, dto: Partial<CreateWorkspaceRecordDto>) {
-    const row = await this.recordsRepository.findOne({ where: { id, org_id, type } });
+  async update(
+    org_id: string,
+    type: string,
+    id: string,
+    actor: any,
+    dto: Partial<CreateWorkspaceRecordDto>,
+  ) {
+    const row = await this.recordsRepository.findOne({
+      where: { id, org_id, type },
+    });
     if (!row) throw new NotFoundException('Record not found');
     Object.assign(row, {
       title: dto.title ?? row.title,
@@ -112,7 +151,9 @@ export class WorkspaceService {
   }
 
   async remove(org_id: string, type: string, id: string, actor: any) {
-    const row = await this.recordsRepository.findOne({ where: { id, org_id, type } });
+    const row = await this.recordsRepository.findOne({
+      where: { id, org_id, type },
+    });
     if (!row) throw new NotFoundException('Record not found');
     await this.recordsRepository.remove(row);
     await this.recordActivity(
@@ -189,7 +230,9 @@ export class WorkspaceService {
   }
 
   async removeComment(org_id: string, id: string, actor: any) {
-    const row = await this.commentsRepository.findOne({ where: { id, org_id } });
+    const row = await this.commentsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!row) throw new NotFoundException('Comment not found');
     const actorId = String(actor?.id || actor?.sub || '');
     const isOwner = row.author_id === actorId;
@@ -230,7 +273,8 @@ export class WorkspaceService {
     } else if (actor_id) {
       qb.andWhere('a.actor_id = :actor_id', { actor_id });
     } else {
-      if (entity_type) qb.andWhere('a.entity_type = :entity_type', { entity_type });
+      if (entity_type)
+        qb.andWhere('a.entity_type = :entity_type', { entity_type });
       if (entity_id) qb.andWhere('a.entity_id = :entity_id', { entity_id });
     }
 
@@ -256,11 +300,19 @@ export class WorkspaceService {
     });
   }
 
-  private activitySummary(action: 'created' | 'updated' | 'deleted', type: string, title?: string) {
+  private activitySummary(
+    action: 'created' | 'updated' | 'deleted',
+    type: string,
+    title?: string,
+  ) {
     const label = this.humanizeEntityType(type);
     const name = (title || 'Untitled').trim();
     const verb =
-      action === 'created' ? 'created' : action === 'updated' ? 'updated' : 'deleted';
+      action === 'created'
+        ? 'created'
+        : action === 'updated'
+          ? 'updated'
+          : 'deleted';
     return `${verb} ${label} "${name}"`;
   }
 
@@ -271,7 +323,8 @@ export class WorkspaceService {
       .toLowerCase()
       .trim();
     if (spaced.endsWith('ies')) return `${spaced.slice(0, -3)}y`;
-    if (spaced.endsWith('s') && !spaced.endsWith('ss')) return spaced.slice(0, -1);
+    if (spaced.endsWith('s') && !spaced.endsWith('ss'))
+      return spaced.slice(0, -1);
     return spaced || 'record';
   }
 
@@ -297,9 +350,12 @@ export class WorkspaceService {
 
   private statusVariant(status?: string) {
     const s = (status || '').toLowerCase();
-    if (['active', 'completed', 'paid', 'approved', 'won'].includes(s)) return 'success';
-    if (['pending', 'in_progress', 'scheduled', 'draft', 'paused'].includes(s)) return 'warning';
-    if (['rejected', 'cancelled', 'terminated', 'lost'].includes(s)) return 'error';
+    if (['active', 'completed', 'paid', 'approved', 'won'].includes(s))
+      return 'success';
+    if (['pending', 'in_progress', 'scheduled', 'draft', 'paused'].includes(s))
+      return 'warning';
+    if (['rejected', 'cancelled', 'terminated', 'lost'].includes(s))
+      return 'error';
     return 'default';
   }
 }
