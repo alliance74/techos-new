@@ -33,4 +33,12 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   organizationName?: string;
+
+  @IsOptional()
+  @IsString()
+  organizationId?: string;
+
+  @IsOptional()
+  @IsString()
+  organizationSlug?: string;
 }

@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  NotFoundException,
   Logger,
   OnModuleInit,
 } from '@nestjs/common';
@@ -127,8 +128,16 @@ export class AuthService implements OnModuleInit {
   }
 
   async register(registerDto: RegisterDto) {
-    const { email, password, firstName, lastName, role, organizationName } =
-      registerDto;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      role,
+      organizationName,
+      organizationId,
+      organizationSlug,
+    } = registerDto;
 
     // Check if user exists
     const existingUser = await this.usersRepository.findOne({
@@ -138,19 +147,43 @@ export class AuthService implements OnModuleInit {
       throw new ConflictException('Email already exists');
     }
 
-    // Get or create the single organization
-    let organization = await this.organizationsRepository.findOne({
-      where: { slug: 'techos-company' }, // Single organization for all users
-    });
+    // Determine organization: join existing or create new
+    let organization: Organization | null = null;
 
-    if (!organization) {
-      // Create organization if it doesn't exist (first user registration)
-      organization = this.organizationsRepository.create({
-        id: randomUUID(),
-        name: organizationName || 'TechOS Company',
-        slug: 'techos-company',
+    if (organizationId) {
+      // Join existing organization by ID
+      organization = await this.organizationsRepository.findOne({
+        where: { id: organizationId },
       });
-      await this.organizationsRepository.save(organization);
+      if (!organization) {
+        throw new NotFoundException('Organization not found');
+      }
+    } else if (organizationSlug) {
+      // Join existing organization by slug
+      organization = await this.organizationsRepository.findOne({
+        where: { slug: organizationSlug },
+      });
+      if (!organization) {
+        throw new NotFoundException('Organization not found');
+      }
+    } else {
+      // Create new organization (or use default)
+      const slug = organizationName
+        ? organizationName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+        : 'techos-company';
+
+      organization = await this.organizationsRepository.findOne({
+        where: { slug },
+      });
+
+      if (!organization) {
+        organization = this.organizationsRepository.create({
+          id: randomUUID(),
+          name: organizationName || 'TechOS Company',
+          slug,
+        });
+        await this.organizationsRepository.save(organization);
+      }
     }
 
     // Hash password
@@ -164,7 +197,7 @@ export class AuthService implements OnModuleInit {
       password_hash,
       first_name: firstName,
       last_name: lastName,
-      role: role, // Use the role provided by user
+      role: role,
       status: 'active',
     });
     await this.usersRepository.save(user);
@@ -188,6 +221,11 @@ export class AuthService implements OnModuleInit {
           last_name: user.last_name,
           role: user.role,
           org_id: user.org_id,
+          organization: {
+            id: organization.id,
+            name: organization.name,
+            slug: organization.slug,
+          },
           preferences: user.preferences,
         },
       },
