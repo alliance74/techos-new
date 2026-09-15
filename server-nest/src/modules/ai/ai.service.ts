@@ -117,14 +117,20 @@ export class AiService {
     }
   }
 
-  async chat(org_id: string, user_id: string, message: string, provider: AIProvider = 'openai') {
+  async chat(
+    org_id: string,
+    user_id: string,
+    message: string,
+    provider: AIProvider = 'openai',
+  ) {
     // Validate message
     if (!message || message.trim().length === 0) {
       throw new BadRequestException('Message cannot be empty');
     }
 
     // MOCK MODE: If no API keys are configured, return mock response
-    const hasAnyProvider = this.openai || this.anthropic || this.gemini || this.grokApiKey;
+    const hasAnyProvider =
+      this.openai || this.anthropic || this.gemini || this.grokApiKey;
     if (!hasAnyProvider) {
       console.log('⚠️  No AI providers configured. Returning mock response.');
       return {
@@ -143,17 +149,19 @@ export class AiService {
     // Get user information for role-based context
     const user = await this.userRepository.findOne({ where: { id: user_id } });
     const userRole = user?.role || 'Unknown';
-    const userName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'User';
+    const userName = user
+      ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+      : 'User';
 
     // Gather system context
     const context = await this.gatherSystemContext(org_id);
-    
+
     // Build system prompt with complete context including user role
     const systemPrompt = this.buildSystemPrompt(context, userRole, userName);
-    
+
     // Call appropriate AI provider
     let response: string;
-    
+
     try {
       switch (provider) {
         case 'openai':
@@ -188,7 +196,12 @@ export class AiService {
     };
   }
 
-  async chatInConversation(org_id: string, user_id: string, conversation_id: string, message: string) {
+  async chatInConversation(
+    org_id: string,
+    user_id: string,
+    conversation_id: string,
+    message: string,
+  ) {
     // Validate message
     if (!message || message.trim().length === 0) {
       throw new BadRequestException('Message cannot be empty');
@@ -213,13 +226,15 @@ export class AiService {
     // Get user info
     const user = await this.userRepository.findOne({ where: { id: user_id } });
     const userRole = user?.role || 'Unknown';
-    const userName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'User';
+    const userName = user
+      ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+      : 'User';
 
     // Check usage limits
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
+
     // Get or create usage record
     let usage = await this.usageRepository.findOne({
       where: { userId: user_id },
@@ -248,21 +263,21 @@ export class AiService {
 
     // Get conversation history for context
     const conversationHistory = messages
-      .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+      .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
       .join('\n\n');
 
     // Gather system context
     const context = await this.gatherSystemContext(org_id);
-    
+
     // Build system prompt with context and conversation history
     const systemPrompt = this.buildSystemPrompt(context, userRole, userName);
-    const fullPrompt = conversationHistory 
+    const fullPrompt = conversationHistory
       ? `${systemPrompt}\n\n# CONVERSATION HISTORY\n${conversationHistory}\n\n# CURRENT USER MESSAGE`
       : systemPrompt;
 
     // Call AI provider
     this.validateProviderConfiguration(conversation.provider as AIProvider);
-    
+
     let response: string;
     try {
       switch (conversation.provider) {
@@ -327,22 +342,30 @@ export class AiService {
     switch (provider) {
       case 'openai':
         if (!this.openai) {
-          throw new BadRequestException('OpenAI is not configured. Please add OPENAI_API_KEY to your environment variables.');
+          throw new BadRequestException(
+            'OpenAI is not configured. Please add OPENAI_API_KEY to your environment variables.',
+          );
         }
         break;
       case 'claude':
         if (!this.anthropic) {
-          throw new BadRequestException('Claude is not configured. Please add ANTHROPIC_API_KEY to your environment variables.');
+          throw new BadRequestException(
+            'Claude is not configured. Please add ANTHROPIC_API_KEY to your environment variables.',
+          );
         }
         break;
       case 'gemini':
         if (!this.gemini) {
-          throw new BadRequestException('Gemini is not configured. Please add GEMINI_API_KEY to your environment variables.');
+          throw new BadRequestException(
+            'Gemini is not configured. Please add GEMINI_API_KEY to your environment variables.',
+          );
         }
         break;
       case 'grok':
         if (!this.grokApiKey) {
-          throw new BadRequestException('Grok is not configured. Please add GROK_API_KEY to your environment variables.');
+          throw new BadRequestException(
+            'Grok is not configured. Please add GROK_API_KEY to your environment variables.',
+          );
         }
         break;
     }
@@ -381,39 +404,103 @@ export class AiService {
       channelMessages,
     ] = await Promise.all([
       this.projectRepository.find({ where: { org_id }, take: 100 }),
-      this.taskRepository.find({ where: { org_id }, take: 100, order: { created_at: 'DESC' } }),
-      this.bugRepository.find({ where: { org_id }, take: 50, order: { created_at: 'DESC' } }),
+      this.taskRepository.find({
+        where: { org_id },
+        take: 100,
+        order: { created_at: 'DESC' },
+      }),
+      this.bugRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { created_at: 'DESC' },
+      }),
       this.userRepository.find({ where: { org_id } }),
-      this.invoiceRepository.find({ where: { org_id }, take: 50, order: { created_at: 'DESC' } }),
-      this.expenseRepository.find({ where: { org_id }, take: 50, order: { created_at: 'DESC' } }),
+      this.invoiceRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { created_at: 'DESC' },
+      }),
+      this.expenseRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { created_at: 'DESC' },
+      }),
       this.goalRepository.find({ where: { org_id, status: 'active' } }),
       this.kpiRepository.find({ where: { org_id } }),
-      this.meetingRepository.find({ where: { org_id }, take: 20, order: { scheduled_at: 'DESC' } }),
-      this.sprintRepository.find({ where: { org_id }, take: 10, order: { created_at: 'DESC' } }),
-      this.calendarEventRepository.find({ where: { org_id }, take: 50, order: { start_datetime: 'ASC' } }),
+      this.meetingRepository.find({
+        where: { org_id },
+        take: 20,
+        order: { scheduled_at: 'DESC' },
+      }),
+      this.sprintRepository.find({
+        where: { org_id },
+        take: 10,
+        order: { created_at: 'DESC' },
+      }),
+      this.calendarEventRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { start_datetime: 'ASC' },
+      }),
       this.contactRepository.find({ where: { org_id }, take: 100 }),
-      this.dealRepository.find({ where: { org_id }, take: 50, order: { created_at: 'DESC' } }),
-      this.documentRepository.find({ where: { org_id }, take: 50, order: { created_at: 'DESC' } }),
-      this.announcementRepository.find({ where: { org_id }, take: 20, order: { created_at: 'DESC' } }),
-      this.featureRepository.find({ where: { org_id }, take: 50, order: { created_at: 'DESC' } }),
-      this.epicRepository.find({ where: { org_id }, take: 30, order: { created_at: 'DESC' } }),
-      this.releaseRepository.find({ where: { org_id }, take: 20, order: { created_at: 'DESC' } }),
-      this.customerFeedbackRepository.find({ where: { org_id }, take: 50, order: { created_at: 'DESC' } }),
+      this.dealRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { created_at: 'DESC' },
+      }),
+      this.documentRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { created_at: 'DESC' },
+      }),
+      this.announcementRepository.find({
+        where: { org_id },
+        take: 20,
+        order: { created_at: 'DESC' },
+      }),
+      this.featureRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { created_at: 'DESC' },
+      }),
+      this.epicRepository.find({
+        where: { org_id },
+        take: 30,
+        order: { created_at: 'DESC' },
+      }),
+      this.releaseRepository.find({
+        where: { org_id },
+        take: 20,
+        order: { created_at: 'DESC' },
+      }),
+      this.customerFeedbackRepository.find({
+        where: { org_id },
+        take: 50,
+        order: { created_at: 'DESC' },
+      }),
       this.employeeRepository.find({ where: { org_id } }),
-      this.leaveRequestRepository.find({ where: { org_id }, take: 30, order: { created_at: 'DESC' } }),
-      this.codeReviewRepository.find({ where: { org_id }, take: 30, order: { created_at: 'DESC' } }),
+      this.leaveRequestRepository.find({
+        where: { org_id },
+        take: 30,
+        order: { created_at: 'DESC' },
+      }),
+      this.codeReviewRepository.find({
+        where: { org_id },
+        take: 30,
+        order: { created_at: 'DESC' },
+      }),
       this.channelRepository.find({ where: { org_id }, take: 30 }),
       // Messages don't have org_id - skip for now or query by channel
       Promise.resolve([]),
     ]);
 
     // Filter upcoming calendar events (today and this week)
-    const todayEvents = calendarEvents.filter(e => {
+    const todayEvents = calendarEvents.filter((e) => {
       const eventDate = new Date(e.start_datetime);
       return eventDate.toDateString() === today.toDateString();
     });
 
-    const weekEvents = calendarEvents.filter(e => {
+    const weekEvents = calendarEvents.filter((e) => {
       const eventDate = new Date(e.start_datetime);
       return eventDate >= today && eventDate <= weekFromNow;
     });
@@ -421,59 +508,72 @@ export class AiService {
     // Calculate statistics
     const projectStats = {
       total: projects.length,
-      active: projects.filter(p => p.status === 'active').length,
-      completed: projects.filter(p => p.status === 'completed').length,
+      active: projects.filter((p) => p.status === 'active').length,
+      completed: projects.filter((p) => p.status === 'completed').length,
     };
 
     const taskStats = {
       total: tasks.length,
-      todo: tasks.filter(t => t.status === 'todo').length,
-      in_progress: tasks.filter(t => t.status === 'in_progress').length,
-      done: tasks.filter(t => t.status === 'done').length,
+      todo: tasks.filter((t) => t.status === 'todo').length,
+      in_progress: tasks.filter((t) => t.status === 'in_progress').length,
+      done: tasks.filter((t) => t.status === 'done').length,
     };
 
     const bugStats = {
       total: bugs.length,
-      open: bugs.filter(b => b.status === 'open').length,
-      critical: bugs.filter(b => b.severity === 'critical').length,
+      open: bugs.filter((b) => b.status === 'open').length,
+      critical: bugs.filter((b) => b.severity === 'critical').length,
     };
 
     const financialStats = {
       total_revenue: invoices.reduce((sum, inv) => sum + inv.amount, 0),
       total_expenses: expenses.reduce((sum, exp) => sum + exp.amount, 0),
-      net_profit: invoices.reduce((sum, inv) => sum + inv.amount, 0) - expenses.reduce((sum, exp) => sum + exp.amount, 0),
+      net_profit:
+        invoices.reduce((sum, inv) => sum + inv.amount, 0) -
+        expenses.reduce((sum, exp) => sum + exp.amount, 0),
     };
 
     const goalStats = {
       total: goals.length,
-      average_progress: goals.reduce((sum, g) => sum + g.progress, 0) / goals.length || 0,
+      average_progress:
+        goals.reduce((sum, g) => sum + g.progress, 0) / goals.length || 0,
     };
 
     const crmStats = {
       total_contacts: contacts.length,
       total_deals: deals.length,
-      deals_in_progress: deals.filter(d => d.stage !== 'won' && d.stage !== 'lost').length,
-      deals_won: deals.filter(d => d.stage === 'won').length,
-      pipeline_value: deals.filter(d => d.stage !== 'lost').reduce((sum, d) => sum + (d.value || 0), 0),
+      deals_in_progress: deals.filter(
+        (d) => d.stage !== 'won' && d.stage !== 'lost',
+      ).length,
+      deals_won: deals.filter((d) => d.stage === 'won').length,
+      pipeline_value: deals
+        .filter((d) => d.stage !== 'lost')
+        .reduce((sum, d) => sum + (d.value || 0), 0),
     };
 
     const hrStats = {
       total_employees: employees.length,
-      pending_leave_requests: leaveRequests.filter(l => l.status === 'pending').length,
-      approved_leave: leaveRequests.filter(l => l.status === 'approved').length,
+      pending_leave_requests: leaveRequests.filter(
+        (l) => l.status === 'pending',
+      ).length,
+      approved_leave: leaveRequests.filter((l) => l.status === 'approved')
+        .length,
     };
 
     const productStats = {
       total_features: features.length,
-      features_in_progress: features.filter(f => f.status === 'in_progress').length,
+      features_in_progress: features.filter((f) => f.status === 'in_progress')
+        .length,
       total_epics: epics.length,
       total_releases: releases.length,
       feedback_count: customerFeedback.length,
     };
 
     const devStats = {
-      pending_reviews: codeReviews.filter(cr => cr.status === 'pending').length,
-      approved_reviews: codeReviews.filter(cr => cr.status === 'approved').length,
+      pending_reviews: codeReviews.filter((cr) => cr.status === 'pending')
+        .length,
+      approved_reviews: codeReviews.filter((cr) => cr.status === 'approved')
+        .length,
     };
 
     return {
@@ -490,7 +590,9 @@ export class AiService {
       calendarEvents: {
         today: todayEvents,
         thisWeek: weekEvents.slice(0, 10),
-        upcoming: calendarEvents.filter(e => new Date(e.start_datetime) > now).slice(0, 10),
+        upcoming: calendarEvents
+          .filter((e) => new Date(e.start_datetime) > now)
+          .slice(0, 10),
       },
       crm: {
         contacts: contacts.slice(0, 20),
@@ -506,7 +608,9 @@ export class AiService {
       },
       hr: {
         employees: employees.slice(0, 50),
-        leaveRequests: leaveRequests.filter(l => l.status === 'pending' || l.status === 'approved').slice(0, 10),
+        leaveRequests: leaveRequests
+          .filter((l) => l.status === 'pending' || l.status === 'approved')
+          .slice(0, 10),
       },
       development: {
         codeReviews: codeReviews.slice(0, 10),
@@ -530,45 +634,49 @@ export class AiService {
     };
   }
 
-  private buildSystemPrompt(context: any, userRole: string = 'Unknown', userName: string = 'User'): string {
+  private buildSystemPrompt(
+    context: any,
+    userRole: string = 'Unknown',
+    userName: string = 'User',
+  ): string {
     // Role-specific context
     const roleContextMap: Record<string, string> = {
-      'ceo': `You are speaking with the CEO. Focus on:
+      ceo: `You are speaking with the CEO. Focus on:
 - High-level strategic insights and business metrics
 - Overall company performance and growth trends
 - Risk management and opportunity identification
 - Resource allocation and team capacity
 - Cross-functional coordination and alignment`,
-      
-      'cto': `You are speaking with the CTO. Focus on:
+
+      cto: `You are speaking with the CTO. Focus on:
 - Technology stack, architecture, and infrastructure
 - Development velocity and engineering productivity
 - Code quality, technical debt, and best practices
 - Sprint performance and delivery timelines
 - Bug severity and system reliability`,
-      
-      'ciso': `You are speaking with the CISO. Focus on:
+
+      ciso: `You are speaking with the CISO. Focus on:
 - Security posture and vulnerability management
 - Compliance status and audit requirements
 - Incident response and threat analysis
 - Access control and authentication systems
 - Security risks across projects and infrastructure`,
-      
-      'finance': `You are speaking with the Finance Manager. Focus on:
+
+      finance: `You are speaking with the Finance Manager. Focus on:
 - Financial performance: revenue, expenses, and profitability
 - Budget tracking and cost optimization
 - Invoice management and payment status
 - Financial forecasting and cash flow analysis
 - Resource costs and ROI metrics`,
-      
-      'software_engineer': `You are speaking with a Software Engineer. Focus on:
+
+      software_engineer: `You are speaking with a Software Engineer. Focus on:
 - Assigned tasks and bug fixes
 - Sprint goals and development priorities
 - Code reviews and technical implementation
 - Project dependencies and blockers
 - Personal productivity and workload`,
-      
-      'ui_ux_designer': `You are speaking with a UI/UX Designer. Focus on:
+
+      ui_ux_designer: `You are speaking with a UI/UX Designer. Focus on:
 - Design tasks and deliverables
 - User experience improvements
 - Design system consistency
@@ -576,7 +684,8 @@ export class AiService {
 - Design-related project milestones`,
     };
 
-    const roleContext = roleContextMap[userRole.toLowerCase().replace(/\s+/g, '_')] || 
+    const roleContext =
+      roleContextMap[userRole.toLowerCase().replace(/\s+/g, '_')] ||
       `You are speaking with a team member (${userRole}). Provide relevant insights based on their role.`;
 
     return `You are an intelligent AI assistant for TechOS, a comprehensive operating system for software companies.
@@ -617,58 +726,104 @@ You have COMPLETE access to the following real-time data from the organization:
 👨‍💻 Development: ${context.statistics.development.pending_reviews} code reviews pending
 
 # CALENDAR - TODAY'S SCHEDULE
-${context.calendarEvents.today.length > 0 
-  ? context.calendarEvents.today.map(e => `🗓️ ${e.title} at ${new Date(e.start_datetime).toLocaleTimeString()} - ${e.description || 'No description'}`).join('\n')
-  : '📅 No events scheduled for today'}
+${
+  context.calendarEvents.today.length > 0
+    ? context.calendarEvents.today
+        .map(
+          (e) =>
+            `🗓️ ${e.title} at ${new Date(e.start_datetime).toLocaleTimeString()} - ${e.description || 'No description'}`,
+        )
+        .join('\n')
+    : '📅 No events scheduled for today'
+}
 
 # CALENDAR - THIS WEEK
-${context.calendarEvents.thisWeek.length > 0
-  ? context.calendarEvents.thisWeek.slice(0, 5).map(e => `🗓️ ${e.title} on ${new Date(e.start_datetime).toLocaleDateString()} at ${new Date(e.start_datetime).toLocaleTimeString()} - ${e.description || 'No description'}`).join('\n')
-  : '📅 No events this week'}
+${
+  context.calendarEvents.thisWeek.length > 0
+    ? context.calendarEvents.thisWeek
+        .slice(0, 5)
+        .map(
+          (e) =>
+            `🗓️ ${e.title} on ${new Date(e.start_datetime).toLocaleDateString()} at ${new Date(e.start_datetime).toLocaleTimeString()} - ${e.description || 'No description'}`,
+        )
+        .join('\n')
+    : '📅 No events this week'
+}
 
 # RECENT PROJECTS
-${context.projects.map(p => `- ${p.name} (${p.status}): ${p.description || 'No description'}`).join('\n')}
+${context.projects.map((p) => `- ${p.name} (${p.status}): ${p.description || 'No description'}`).join('\n')}
 
 # RECENT TASKS (Top Priority)
-${context.tasks.slice(0, 10).map(t => `- ${t.title} [${t.status}] - Priority: ${t.priority}`).join('\n')}
+${context.tasks
+  .slice(0, 10)
+  .map((t) => `- ${t.title} [${t.status}] - Priority: ${t.priority}`)
+  .join('\n')}
 
 # ACTIVE GOALS & PROGRESS
-${context.goals.map(g => `- ${g.title}: ${g.progress}% complete - ${g.description || ''}`).join('\n')}
+${context.goals.map((g) => `- ${g.title}: ${g.progress}% complete - ${g.description || ''}`).join('\n')}
 
 # KEY PERFORMANCE INDICATORS
-${context.kpis.map(k => `- ${k.name}: ${k.current}/${k.target} ${k.unit}`).join('\n')}
+${context.kpis.map((k) => `- ${k.name}: ${k.current}/${k.target} ${k.unit}`).join('\n')}
 
 # CRITICAL BUGS
-${context.bugs.slice(0, 5).map(b => `- ${b.title} [${b.severity}/${b.priority}] - ${b.status}`).join('\n')}
+${context.bugs
+  .slice(0, 5)
+  .map((b) => `- ${b.title} [${b.severity}/${b.priority}] - ${b.status}`)
+  .join('\n')}
 
 # ACTIVE SPRINTS
-${context.sprints.filter(s => s.status === 'active').map(s => `- ${s.name} (${s.start_date} to ${s.end_date})`).join('\n')}
+${context.sprints
+  .filter((s) => s.status === 'active')
+  .map((s) => `- ${s.name} (${s.start_date} to ${s.end_date})`)
+  .join('\n')}
 
 # CRM - ACTIVE DEALS
-${context.crm.deals.slice(0, 5).map(d => `- ${d.name} [${d.stage}] - Value: $${d.value || 0} - Contact: ${d.contact_id}`).join('\n')}
+${context.crm.deals
+  .slice(0, 5)
+  .map(
+    (d) =>
+      `- ${d.name} [${d.stage}] - Value: $${d.value || 0} - Contact: ${d.contact_id}`,
+  )
+  .join('\n')}
 
 # RECENT ANNOUNCEMENTS
-${context.announcements.map(a => `📢 ${a.title}: ${a.content?.substring(0, 100) || ''}...`).join('\n')}
+${context.announcements.map((a) => `📢 ${a.title}: ${a.content?.substring(0, 100) || ''}...`).join('\n')}
 
 # PRODUCT ROADMAP - ACTIVE FEATURES
-${context.product.features.slice(0, 10).map(f => `- ${f.name} [${f.status}] - Priority: ${f.priority}`).join('\n')}
+${context.product.features
+  .slice(0, 10)
+  .map((f) => `- ${f.name} [${f.status}] - Priority: ${f.priority}`)
+  .join('\n')}
 
 # CUSTOMER FEEDBACK (Recent)
-${context.product.feedback.slice(0, 5).map(f => `- ${f.title} [${f.category}] - Priority: ${f.priority}`).join('\n')}
+${context.product.feedback
+  .slice(0, 5)
+  .map((f) => `- ${f.title} [${f.category}] - Priority: ${f.priority}`)
+  .join('\n')}
 
 # TEAM AVAILABILITY (Leave Requests)
-${context.hr.leaveRequests.length > 0
-  ? context.hr.leaveRequests.map(l => `- ${l.employee_id}: ${l.start_date} to ${l.end_date} (${l.status})`).join('\n')
-  : 'No pending or approved leave requests'}
+${
+  context.hr.leaveRequests.length > 0
+    ? context.hr.leaveRequests
+        .map(
+          (l) =>
+            `- ${l.employee_id}: ${l.start_date} to ${l.end_date} (${l.status})`,
+        )
+        .join('\n')
+    : 'No pending or approved leave requests'
+}
 
 # PENDING CODE REVIEWS
-${context.development.codeReviews.slice(0, 5).map(cr => `- ${cr.title} by ${cr.reviewer_id} [${cr.status}]`).join('\n')}
+${context.development.codeReviews
+  .slice(0, 5)
+  .map((cr) => `- ${cr.title} by ${cr.reviewer_id} [${cr.status}]`)
+  .join('\n')}
 
 # RECENT DOCUMENTS
-${context.documents.map(d => `- ${d.name} (${d.type}) - Created: ${new Date(d.created_at).toLocaleDateString()}`).join('\n')}
+${context.documents.map((d) => `- ${d.name} (${d.type}) - Created: ${new Date(d.created_at).toLocaleDateString()}`).join('\n')}
 
 # TEAM CHANNELS
-${context.communications.channels.map(c => `- #${c.name}: ${c.description || 'No description'}`).join('\n')}
+${context.communications.channels.map((c) => `- #${c.name}: ${c.description || 'No description'}`).join('\n')}
 
 INSTRUCTIONS:
 - You have COMPLETE visibility into ALL system data: calendar, CRM, HR, documents, product roadmap, code reviews, communications, and more
@@ -698,7 +853,10 @@ You can answer comprehensive questions like:
 - "Show me recent documents" → Check RECENT DOCUMENTS`;
   }
 
-  private async callOpenAI(systemPrompt: string, userMessage: string): Promise<string> {
+  private async callOpenAI(
+    systemPrompt: string,
+    userMessage: string,
+  ): Promise<string> {
     if (!this.openai) {
       throw new BadRequestException('OpenAI API key not configured');
     }
@@ -716,7 +874,10 @@ You can answer comprehensive questions like:
     return completion.choices[0].message.content || 'No response generated';
   }
 
-  private async callClaude(systemPrompt: string, userMessage: string): Promise<string> {
+  private async callClaude(
+    systemPrompt: string,
+    userMessage: string,
+  ): Promise<string> {
     if (!this.anthropic) {
       throw new BadRequestException('Claude API key not configured');
     }
@@ -725,21 +886,22 @@ You can answer comprehensive questions like:
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
       system: systemPrompt,
-      messages: [
-        { role: 'user', content: userMessage },
-      ],
+      messages: [{ role: 'user', content: userMessage }],
     });
 
     return message.content[0].type === 'text' ? message.content[0].text : '';
   }
 
-  private async callGemini(systemPrompt: string, userMessage: string): Promise<string> {
+  private async callGemini(
+    systemPrompt: string,
+    userMessage: string,
+  ): Promise<string> {
     if (!this.gemini) {
       throw new BadRequestException('Gemini API key not configured');
     }
 
     const geminiApiKey = this.configService.get('GEMINI_API_KEY');
-    
+
     try {
       // Use REST API directly with the correct v1 model name (gemini-3.6-flash is GA and production-ready)
       const response = await axios.post(
@@ -749,44 +911,47 @@ You can answer comprehensive questions like:
             {
               parts: [
                 {
-                  text: `${systemPrompt}\n\nUser Question: ${userMessage}`
-                }
-              ]
-            }
+                  text: `${systemPrompt}\n\nUser Question: ${userMessage}`,
+                },
+              ],
+            },
           ],
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 2000,
-          }
+          },
         },
         {
           headers: {
             'Content-Type': 'application/json',
-          }
-        }
+          },
+        },
       );
 
       const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) {
         throw new Error('No response text from Gemini');
       }
-      
+
       return text;
     } catch (error) {
       console.error('Gemini API Error:', error.response?.data || error.message);
-      
+
       // If it's an axios error, get more details
       if (error.response) {
         throw new BadRequestException(
-          `Gemini API error: ${error.response.data?.error?.message || error.message}`
+          `Gemini API error: ${error.response.data?.error?.message || error.message}`,
         );
       }
-      
+
       throw new BadRequestException(`Gemini API error: ${error.message}`);
     }
   }
 
-  private async callGrok(systemPrompt: string, userMessage: string): Promise<string> {
+  private async callGrok(
+    systemPrompt: string,
+    userMessage: string,
+  ): Promise<string> {
     if (!this.grokApiKey) {
       throw new BadRequestException('Grok API key not configured');
     }
@@ -804,34 +969,45 @@ You can answer comprehensive questions like:
       },
       {
         headers: {
-          'Authorization': `Bearer ${this.grokApiKey}`,
+          Authorization: `Bearer ${this.grokApiKey}`,
           'Content-Type': 'application/json',
         },
-      }
+      },
     );
 
     return response.data.choices[0].message.content;
   }
 
-  async generateReport(org_id: string, reportType: string, provider: AIProvider = 'openai') {
+  async generateReport(
+    org_id: string,
+    reportType: string,
+    provider: AIProvider = 'openai',
+  ) {
     const context = await this.gatherSystemContext(org_id);
-    
+
     const prompts = {
-      executive: 'Generate a comprehensive executive summary report covering projects, financials, goals, and team performance.',
-      financial: 'Generate a detailed financial analysis including revenue, expenses, profitability trends, and recommendations.',
-      project: 'Generate a project status report covering all active projects, completion rates, and blockers.',
-      sprint: 'Generate a sprint analysis report covering velocity, completion rates, and team performance.',
-      goals: 'Generate a goals and OKRs progress report with risk analysis and recommendations.',
+      executive:
+        'Generate a comprehensive executive summary report covering projects, financials, goals, and team performance.',
+      financial:
+        'Generate a detailed financial analysis including revenue, expenses, profitability trends, and recommendations.',
+      project:
+        'Generate a project status report covering all active projects, completion rates, and blockers.',
+      sprint:
+        'Generate a sprint analysis report covering velocity, completion rates, and team performance.',
+      goals:
+        'Generate a goals and OKRs progress report with risk analysis and recommendations.',
     };
 
-    const prompt = prompts[reportType] || 'Generate a comprehensive status report of the entire system.';
-    
+    const prompt =
+      prompts[reportType] ||
+      'Generate a comprehensive status report of the entire system.';
+
     return this.chat(org_id, 'system', prompt, provider);
   }
 
   async analyzeRisk(org_id: string, provider: AIProvider = 'openai') {
     const context = await this.gatherSystemContext(org_id);
-    
+
     const prompt = `Analyze all current data and identify:
 1. Projects at risk of delay
 2. Financial concerns or budget overruns
@@ -846,7 +1022,7 @@ Provide specific, actionable recommendations for each risk identified.`;
 
   async suggestPriorities(org_id: string, provider: AIProvider = 'openai') {
     const context = await this.gatherSystemContext(org_id);
-    
+
     const prompt = `Based on all current data, suggest:
 1. Top 5 tasks that should be prioritized
 2. Critical bugs that need immediate attention

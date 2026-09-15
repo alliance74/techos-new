@@ -34,16 +34,20 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { CisoModule } from './modules/ciso/ciso.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { CodeReviewsModule } from './modules/code-reviews/code-reviews.module';
+import { GithubModule } from './modules/github/github.module';
 
 function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
-  const dbType = (config.get<string>('DATABASE_TYPE') || 'sqlite').toLowerCase();
+  const dbType = (
+    config.get<string>('DATABASE_TYPE') || 'sqlite'
+  ).toLowerCase();
   const isDev = config.get<string>('NODE_ENV') !== 'production';
   const synchronize =
-    (config.get<string>('DATABASE_SYNC') || (isDev ? 'true' : 'false')) === 'true';
+    (config.get<string>('DATABASE_SYNC') || (isDev ? 'true' : 'false')) ===
+    'true';
 
   // Check for DATABASE_URL (connection string format - e.g., from Neon, Railway, etc.)
   const databaseUrl = config.get<string>('DATABASE_URL');
-  
+
   if (databaseUrl) {
     return {
       type: 'postgres',
@@ -53,7 +57,9 @@ function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
       logging: isDev,
       retryAttempts: 10,
       retryDelay: 3000,
-      ssl: databaseUrl.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+      ssl: databaseUrl.includes('sslmode=require')
+        ? { rejectUnauthorized: false }
+        : false,
     };
   }
 
@@ -128,6 +134,7 @@ function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
     CisoModule,
     WorkspaceModule,
     CodeReviewsModule,
+    GithubModule,
   ],
   controllers: [AppController],
   providers: [AppService],

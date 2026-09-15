@@ -42,7 +42,8 @@ export class ReportsService {
   }
 
   async findAll(org_id: string, filters?: any) {
-    const query = this.reportRepository.createQueryBuilder('report')
+    const query = this.reportRepository
+      .createQueryBuilder('report')
       .where('report.org_id = :org_id', { org_id });
 
     if (filters?.type) {
@@ -56,7 +57,9 @@ export class ReportsService {
   }
 
   async findOne(id: string, org_id: string) {
-    const report = await this.reportRepository.findOne({ where: { id, org_id } });
+    const report = await this.reportRepository.findOne({
+      where: { id, org_id },
+    });
     if (!report) {
       throw new NotFoundException('Report not found');
     }
@@ -64,7 +67,9 @@ export class ReportsService {
   }
 
   async updateReport(id: string, org_id: string, updateDto: any) {
-    const report = await this.reportRepository.findOne({ where: { id, org_id } });
+    const report = await this.reportRepository.findOne({
+      where: { id, org_id },
+    });
     if (!report) {
       throw new NotFoundException('Report not found');
     }
@@ -75,7 +80,9 @@ export class ReportsService {
   }
 
   async removeReport(id: string, org_id: string) {
-    const report = await this.reportRepository.findOne({ where: { id, org_id } });
+    const report = await this.reportRepository.findOne({
+      where: { id, org_id },
+    });
     if (!report) {
       throw new NotFoundException('Report not found');
     }
@@ -86,7 +93,8 @@ export class ReportsService {
 
   // Generate specific report types
   async generateProjectReport(org_id: string, project_id?: string) {
-    const query = this.projectRepository.createQueryBuilder('project')
+    const query = this.projectRepository
+      .createQueryBuilder('project')
       .where('project.org_id = :org_id', { org_id });
 
     if (project_id) {
@@ -109,31 +117,39 @@ export class ReportsService {
           project,
           tasks: {
             total: tasks.length,
-            completed: tasks.filter(t => t.status === 'done').length,
-            in_progress: tasks.filter(t => t.status === 'in_progress').length,
-            pending: tasks.filter(t => t.status === 'todo').length,
+            completed: tasks.filter((t) => t.status === 'done').length,
+            in_progress: tasks.filter((t) => t.status === 'in_progress').length,
+            pending: tasks.filter((t) => t.status === 'todo').length,
           },
           bugs: {
             total: bugs.length,
-            open: bugs.filter(b => b.status === 'open').length,
-            resolved: bugs.filter(b => b.status === 'resolved').length,
+            open: bugs.filter((b) => b.status === 'open').length,
+            resolved: bugs.filter((b) => b.status === 'resolved').length,
           },
         };
-      })
+      }),
     );
 
     return { success: true, data: report };
   }
 
-  async generateFinancialReport(org_id: string, start_date?: string, end_date?: string) {
-    const invoiceQuery = this.invoiceRepository.createQueryBuilder('invoice')
+  async generateFinancialReport(
+    org_id: string,
+    start_date?: string,
+    end_date?: string,
+  ) {
+    const invoiceQuery = this.invoiceRepository
+      .createQueryBuilder('invoice')
       .where('invoice.org_id = :org_id', { org_id });
 
-    const expenseQuery = this.expenseRepository.createQueryBuilder('expense')
+    const expenseQuery = this.expenseRepository
+      .createQueryBuilder('expense')
       .where('expense.org_id = :org_id', { org_id });
 
     if (start_date) {
-      invoiceQuery.andWhere('invoice.created_at >= :start_date', { start_date });
+      invoiceQuery.andWhere('invoice.created_at >= :start_date', {
+        start_date,
+      });
       expenseQuery.andWhere('expense.date >= :start_date', { start_date });
     }
 
@@ -165,18 +181,30 @@ export class ReportsService {
         revenue: {
           total: totalRevenue,
           by_status: {
-            paid: invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0),
-            pending: invoices.filter(inv => inv.status === 'pending').reduce((sum, inv) => sum + inv.amount, 0),
-            overdue: invoices.filter(inv => inv.status === 'overdue').reduce((sum, inv) => sum + inv.amount, 0),
+            paid: invoices
+              .filter((inv) => inv.status === 'paid')
+              .reduce((sum, inv) => sum + inv.amount, 0),
+            pending: invoices
+              .filter((inv) => inv.status === 'pending')
+              .reduce((sum, inv) => sum + inv.amount, 0),
+            overdue: invoices
+              .filter((inv) => inv.status === 'overdue')
+              .reduce((sum, inv) => sum + inv.amount, 0),
           },
         },
         expenses: {
           total: totalExpenses,
           by_category: expenseByCategory,
           by_status: {
-            approved: expenses.filter(exp => exp.status === 'approved').reduce((sum, exp) => sum + exp.amount, 0),
-            pending: expenses.filter(exp => exp.status === 'pending').reduce((sum, exp) => sum + exp.amount, 0),
-            rejected: expenses.filter(exp => exp.status === 'rejected').reduce((sum, exp) => sum + exp.amount, 0),
+            approved: expenses
+              .filter((exp) => exp.status === 'approved')
+              .reduce((sum, exp) => sum + exp.amount, 0),
+            pending: expenses
+              .filter((exp) => exp.status === 'pending')
+              .reduce((sum, exp) => sum + exp.amount, 0),
+            rejected: expenses
+              .filter((exp) => exp.status === 'rejected')
+              .reduce((sum, exp) => sum + exp.amount, 0),
           },
         },
         net_profit: totalRevenue - totalExpenses,
@@ -201,14 +229,22 @@ export class ReportsService {
         });
         return acc;
       }, {}),
-      overall_achievement: kpis.reduce((sum, kpi) => sum + ((kpi.current / kpi.target) * 100), 0) / kpis.length || 0,
+      overall_achievement:
+        kpis.reduce((sum, kpi) => sum + (kpi.current / kpi.target) * 100, 0) /
+          kpis.length || 0,
     };
 
     return { success: true, data: report };
   }
 
-  async generateTaskReport(org_id: string, user_id?: string, start_date?: string, end_date?: string) {
-    const query = this.taskRepository.createQueryBuilder('task')
+  async generateTaskReport(
+    org_id: string,
+    user_id?: string,
+    start_date?: string,
+    end_date?: string,
+  ) {
+    const query = this.taskRepository
+      .createQueryBuilder('task')
       .where('task.org_id = :org_id', { org_id });
 
     if (user_id) {
@@ -228,27 +264,37 @@ export class ReportsService {
     const report = {
       total_tasks: tasks.length,
       by_status: {
-        todo: tasks.filter(t => t.status === 'todo').length,
-        in_progress: tasks.filter(t => t.status === 'in_progress').length,
-        done: tasks.filter(t => t.status === 'done').length,
+        todo: tasks.filter((t) => t.status === 'todo').length,
+        in_progress: tasks.filter((t) => t.status === 'in_progress').length,
+        done: tasks.filter((t) => t.status === 'done').length,
       },
       by_priority: {
-        high: tasks.filter(t => t.priority === 'high').length,
-        medium: tasks.filter(t => t.priority === 'medium').length,
-        low: tasks.filter(t => t.priority === 'low').length,
+        high: tasks.filter((t) => t.priority === 'high').length,
+        medium: tasks.filter((t) => t.priority === 'medium').length,
+        low: tasks.filter((t) => t.priority === 'low').length,
       },
       time_tracking: {
-        total_estimated: tasks.reduce((sum, t) => sum + (t.estimated_hours || 0), 0),
+        total_estimated: tasks.reduce(
+          (sum, t) => sum + (t.estimated_hours || 0),
+          0,
+        ),
         total_logged: tasks.reduce((sum, t) => sum + (t.time_logged || 0), 0),
       },
-      completion_rate: tasks.length ? (tasks.filter(t => t.status === 'done').length / tasks.length) * 100 : 0,
+      completion_rate: tasks.length
+        ? (tasks.filter((t) => t.status === 'done').length / tasks.length) * 100
+        : 0,
     };
 
     return { success: true, data: report };
   }
 
-  async generateBugReport(org_id: string, start_date?: string, end_date?: string) {
-    const query = this.bugRepository.createQueryBuilder('bug')
+  async generateBugReport(
+    org_id: string,
+    start_date?: string,
+    end_date?: string,
+  ) {
+    const query = this.bugRepository
+      .createQueryBuilder('bug')
       .where('bug.org_id = :org_id', { org_id });
 
     if (start_date) {
@@ -264,24 +310,28 @@ export class ReportsService {
     const report = {
       total_bugs: bugs.length,
       by_status: {
-        open: bugs.filter(b => b.status === 'open').length,
-        in_progress: bugs.filter(b => b.status === 'in_progress').length,
-        resolved: bugs.filter(b => b.status === 'resolved').length,
-        closed: bugs.filter(b => b.status === 'closed').length,
+        open: bugs.filter((b) => b.status === 'open').length,
+        in_progress: bugs.filter((b) => b.status === 'in_progress').length,
+        resolved: bugs.filter((b) => b.status === 'resolved').length,
+        closed: bugs.filter((b) => b.status === 'closed').length,
       },
       by_severity: {
-        critical: bugs.filter(b => b.severity === 'critical').length,
-        high: bugs.filter(b => b.severity === 'high').length,
-        medium: bugs.filter(b => b.severity === 'medium').length,
-        low: bugs.filter(b => b.severity === 'low').length,
+        critical: bugs.filter((b) => b.severity === 'critical').length,
+        high: bugs.filter((b) => b.severity === 'high').length,
+        medium: bugs.filter((b) => b.severity === 'medium').length,
+        low: bugs.filter((b) => b.severity === 'low').length,
       },
       by_priority: {
-        high: bugs.filter(b => b.priority === 'high').length,
-        medium: bugs.filter(b => b.priority === 'medium').length,
-        low: bugs.filter(b => b.priority === 'low').length,
+        high: bugs.filter((b) => b.priority === 'high').length,
+        medium: bugs.filter((b) => b.priority === 'medium').length,
+        low: bugs.filter((b) => b.priority === 'low').length,
       },
-      resolution_rate: bugs.length ? 
-        ((bugs.filter(b => b.status === 'resolved' || b.status === 'closed').length) / bugs.length) * 100 : 0,
+      resolution_rate: bugs.length
+        ? (bugs.filter((b) => b.status === 'resolved' || b.status === 'closed')
+            .length /
+            bugs.length) *
+          100
+        : 0,
     };
 
     return { success: true, data: report };

@@ -98,7 +98,9 @@ export class CrmService {
       order: { created_at: 'DESC' },
     });
 
-    const ownerIds = [...new Set(deals.map((d) => d.assigned_to).filter(Boolean))];
+    const ownerIds = [
+      ...new Set(deals.map((d) => d.assigned_to).filter(Boolean)),
+    ];
     const owners = ownerIds.length
       ? await this.usersRepository.find({ where: { id: In(ownerIds) } })
       : [];
@@ -111,7 +113,8 @@ export class CrmService {
         assigned_first_name: owner?.first_name || null,
         assigned_last_name: owner?.last_name || null,
         owner_name: owner
-          ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || owner.email
+          ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() ||
+            owner.email
           : '—',
       };
     });
@@ -125,7 +128,11 @@ export class CrmService {
     };
   }
 
-  async updateContact(id: string, org_id: string, updateData: Partial<Contact> & Record<string, any>) {
+  async updateContact(
+    id: string,
+    org_id: string,
+    updateData: Partial<Contact> & Record<string, any>,
+  ) {
     const contact = await this.contactsRepository.findOne({
       where: { id, org_id },
     });
@@ -190,7 +197,9 @@ export class CrmService {
       }
     } else {
       const companyName =
-        createDealDto.company_name || createDealDto.company || createDealDto.title;
+        createDealDto.company_name ||
+        createDealDto.company ||
+        createDealDto.title;
       const contact = this.contactsRepository.create({
         id: randomUUID(),
         org_id,
@@ -253,13 +262,17 @@ export class CrmService {
       order: { created_at: 'DESC' },
     });
 
-    const ownerIds = [...new Set(deals.map((d) => d.assigned_to).filter(Boolean))];
+    const ownerIds = [
+      ...new Set(deals.map((d) => d.assigned_to).filter(Boolean)),
+    ];
     const owners = ownerIds.length
       ? await this.usersRepository.find({ where: { id: In(ownerIds) } })
       : [];
     const ownerMap = new Map(owners.map((u) => [u.id, u]));
 
-    const contactIds = [...new Set(deals.map((d) => d.contact_id).filter(Boolean))];
+    const contactIds = [
+      ...new Set(deals.map((d) => d.contact_id).filter(Boolean)),
+    ];
     const contacts = contactIds.length
       ? await this.contactsRepository.find({ where: { id: In(contactIds) } })
       : [];
@@ -269,7 +282,8 @@ export class CrmService {
       const owner = ownerMap.get(deal.assigned_to);
       const contact = contactMap.get(deal.contact_id);
       const owner_name = owner
-        ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || owner.email
+        ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() ||
+          owner.email
         : '—';
       return {
         ...deal,
@@ -309,7 +323,8 @@ export class CrmService {
     ]);
 
     const owner_name = owner
-      ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() || owner.email
+      ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim() ||
+        owner.email
       : '—';
 
     return {
@@ -327,7 +342,12 @@ export class CrmService {
     };
   }
 
-  async updateDeal(id: string, org_id: string, updateData: Partial<Deal> & Record<string, any>, actor?: any) {
+  async updateDeal(
+    id: string,
+    org_id: string,
+    updateData: Partial<Deal> & Record<string, any>,
+    actor?: any,
+  ) {
     const deal = await this.dealsRepository.findOne({
       where: { id, org_id },
     });
@@ -362,14 +382,21 @@ export class CrmService {
     const nextStageRaw = String(formStage || status || deal.stage || '')
       .toLowerCase()
       .replace(/\s+/g, '_');
-    const allowed = new Set(['qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost']);
+    const allowed = new Set([
+      'qualification',
+      'proposal',
+      'negotiation',
+      'closed_won',
+      'closed_lost',
+    ]);
     const stageMap: Record<string, string> = {
       won: 'closed_won',
       lost: 'closed_lost',
       closedwon: 'closed_won',
       closedlost: 'closed_lost',
     };
-    const mappedStage = stageMap[nextStageRaw.replace(/_/g, '')] || nextStageRaw;
+    const mappedStage =
+      stageMap[nextStageRaw.replace(/_/g, '')] || nextStageRaw;
 
     Object.assign(deal, {
       ...rest,
@@ -380,7 +407,9 @@ export class CrmService {
       ...(formValue != null || amount != null
         ? { value: Number(formValue ?? amount) }
         : {}),
-      ...(mappedStage && allowed.has(mappedStage) ? { stage: mappedStage } : {}),
+      ...(mappedStage && allowed.has(mappedStage)
+        ? { stage: mappedStage }
+        : {}),
       ...(formAssigned || owner_id || owner
         ? { assigned_to: formAssigned || owner_id || owner }
         : {}),
@@ -455,8 +484,14 @@ export class CrmService {
 
   // Pipeline Analytics
   async getPipelineStats(org_id: string) {
-    const stages = ['qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
-    
+    const stages = [
+      'qualification',
+      'proposal',
+      'negotiation',
+      'closed_won',
+      'closed_lost',
+    ];
+
     const stats = await Promise.all(
       stages.map(async (stage) => {
         const result = await this.dealsRepository
@@ -476,8 +511,8 @@ export class CrmService {
     );
 
     // Calculate win rate
-    const wonCount = stats.find(s => s.stage === 'closed_won')?.count || 0;
-    const lostCount = stats.find(s => s.stage === 'closed_lost')?.count || 0;
+    const wonCount = stats.find((s) => s.stage === 'closed_won')?.count || 0;
+    const lostCount = stats.find((s) => s.stage === 'closed_lost')?.count || 0;
     const totalClosed = wonCount + lostCount;
     const winRate = totalClosed > 0 ? (wonCount / totalClosed) * 100 : 0;
 
@@ -488,9 +523,10 @@ export class CrmService {
         win_rate: winRate.toFixed(2),
         total_deals: stats.reduce((sum, s) => sum + s.count, 0),
         total_pipeline_value: stats
-          .filter(s => !['closed_won', 'closed_lost'].includes(s.stage))
+          .filter((s) => !['closed_won', 'closed_lost'].includes(s.stage))
           .reduce((sum, s) => sum + s.total_value, 0),
-        total_revenue: stats.find(s => s.stage === 'closed_won')?.total_value || 0,
+        total_revenue:
+          stats.find((s) => s.stage === 'closed_won')?.total_value || 0,
       },
     };
   }

@@ -49,28 +49,45 @@ export class ProductService {
   }
 
   async findAllFeatures(org_id: string, filters?: any) {
-    const query = this.featureRepository.createQueryBuilder('feature')
+    const query = this.featureRepository
+      .createQueryBuilder('feature')
       .where('feature.org_id = :org_id', { org_id });
 
-    if (filters?.status) query.andWhere('feature.status = :status', { status: filters.status });
-    if (filters?.priority) query.andWhere('feature.priority = :priority', { priority: filters.priority });
-    if (filters?.epic_id) query.andWhere('feature.epic_id = :epic_id', { epic_id: filters.epic_id });
-    if (filters?.release_id) query.andWhere('feature.release_id = :release_id', { release_id: filters.release_id });
+    if (filters?.status)
+      query.andWhere('feature.status = :status', { status: filters.status });
+    if (filters?.priority)
+      query.andWhere('feature.priority = :priority', {
+        priority: filters.priority,
+      });
+    if (filters?.epic_id)
+      query.andWhere('feature.epic_id = :epic_id', {
+        epic_id: filters.epic_id,
+      });
+    if (filters?.release_id)
+      query.andWhere('feature.release_id = :release_id', {
+        release_id: filters.release_id,
+      });
 
-    query.orderBy('feature.votes', 'DESC').addOrderBy('feature.created_at', 'DESC');
+    query
+      .orderBy('feature.votes', 'DESC')
+      .addOrderBy('feature.created_at', 'DESC');
 
     const features = await query.getMany();
     return { success: true, data: features };
   }
 
   async findOneFeature(id: string, org_id: string) {
-    const feature = await this.featureRepository.findOne({ where: { id, org_id } });
+    const feature = await this.featureRepository.findOne({
+      where: { id, org_id },
+    });
     if (!feature) throw new NotFoundException('Feature not found');
     return { success: true, data: feature };
   }
 
   async updateFeature(id: string, org_id: string, updateDto: any) {
-    const feature = await this.featureRepository.findOne({ where: { id, org_id } });
+    const feature = await this.featureRepository.findOne({
+      where: { id, org_id },
+    });
     if (!feature) throw new NotFoundException('Feature not found');
 
     Object.assign(feature, updateDto);
@@ -79,7 +96,9 @@ export class ProductService {
   }
 
   async removeFeature(id: string, org_id: string) {
-    const feature = await this.featureRepository.findOne({ where: { id, org_id } });
+    const feature = await this.featureRepository.findOne({
+      where: { id, org_id },
+    });
     if (!feature) throw new NotFoundException('Feature not found');
 
     await this.featureRepository.remove(feature);
@@ -87,7 +106,9 @@ export class ProductService {
   }
 
   async voteFeature(id: string, org_id: string) {
-    const feature = await this.featureRepository.findOne({ where: { id, org_id } });
+    const feature = await this.featureRepository.findOne({
+      where: { id, org_id },
+    });
     if (!feature) throw new NotFoundException('Feature not found');
 
     feature.votes += 1;
@@ -110,10 +131,12 @@ export class ProductService {
   }
 
   async findAllEpics(org_id: string, filters?: any) {
-    const query = this.epicRepository.createQueryBuilder('epic')
+    const query = this.epicRepository
+      .createQueryBuilder('epic')
       .where('epic.org_id = :org_id', { org_id });
 
-    if (filters?.status) query.andWhere('epic.status = :status', { status: filters.status });
+    if (filters?.status)
+      query.andWhere('epic.status = :status', { status: filters.status });
 
     query.orderBy('epic.created_at', 'DESC');
 
@@ -126,7 +149,9 @@ export class ProductService {
     if (!epic) throw new NotFoundException('Epic not found');
 
     // Get associated features
-    const features = await this.featureRepository.find({ where: { epic_id: id, org_id } });
+    const features = await this.featureRepository.find({
+      where: { epic_id: id, org_id },
+    });
 
     return { success: true, data: { ...epic, features } };
   }
@@ -162,7 +187,10 @@ export class ProductService {
       org_id,
       reporter_id,
       title: createDto.title,
-      description: createDto.description || createDto.steps_to_reproduce || createDto.title,
+      description:
+        createDto.description ||
+        createDto.steps_to_reproduce ||
+        createDto.title,
       status: createDto.status || 'open',
       severity: createDto.severity || createDto.priority || 'medium',
       priority: createDto.priority || createDto.severity || 'medium',
@@ -180,10 +208,12 @@ export class ProductService {
 
   private async enrichBugs(bugs: Bug[]) {
     if (!bugs.length) return [];
-    const projectIds = [...new Set(bugs.map((b) => b.project_id).filter(Boolean))] as string[];
+    const projectIds = [
+      ...new Set(bugs.map((b) => b.project_id).filter(Boolean)),
+    ] as string[];
     const userIds = [
       ...new Set(
-        bugs.flatMap((b) => [b.assignee_id, b.reporter_id].filter(Boolean) as string[]),
+        bugs.flatMap((b) => [b.assignee_id, b.reporter_id].filter(Boolean)),
       ),
     ];
     const [projects, users] = await Promise.all([
@@ -198,7 +228,9 @@ export class ProductService {
     const userName = Object.fromEntries(
       users.map((u) => [
         u.id,
-        u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
+        u.name ||
+          `${u.first_name || ''} ${u.last_name || ''}`.trim() ||
+          u.email,
       ]),
     );
     return bugs.map((b) => ({
@@ -214,15 +246,33 @@ export class ProductService {
     return enriched;
   }
 
-  async findAllBugs(org_id: string, filters?: any, user?: { id?: string; role?: string }) {
-    const query = this.bugRepository.createQueryBuilder('bug')
+  async findAllBugs(
+    org_id: string,
+    filters?: any,
+    user?: { id?: string; role?: string },
+  ) {
+    const query = this.bugRepository
+      .createQueryBuilder('bug')
       .where('bug.org_id = :org_id', { org_id });
 
-    if (filters?.status) query.andWhere('bug.status = :status', { status: filters.status });
-    if (filters?.severity) query.andWhere('bug.severity = :severity', { severity: filters.severity });
-    if (filters?.priority) query.andWhere('bug.priority = :priority', { priority: filters.priority });
-    if (filters?.assignee_id) query.andWhere('bug.assignee_id = :assignee_id', { assignee_id: filters.assignee_id });
-    if (filters?.project_id) query.andWhere('bug.project_id = :project_id', { project_id: filters.project_id });
+    if (filters?.status)
+      query.andWhere('bug.status = :status', { status: filters.status });
+    if (filters?.severity)
+      query.andWhere('bug.severity = :severity', {
+        severity: filters.severity,
+      });
+    if (filters?.priority)
+      query.andWhere('bug.priority = :priority', {
+        priority: filters.priority,
+      });
+    if (filters?.assignee_id)
+      query.andWhere('bug.assignee_id = :assignee_id', {
+        assignee_id: filters.assignee_id,
+      });
+    if (filters?.project_id)
+      query.andWhere('bug.project_id = :project_id', {
+        project_id: filters.project_id,
+      });
 
     query.orderBy('bug.priority', 'DESC').addOrderBy('bug.created_at', 'DESC');
 
@@ -278,10 +328,12 @@ export class ProductService {
   }
 
   async findAllReleases(org_id: string, filters?: any) {
-    const query = this.releaseRepository.createQueryBuilder('release')
+    const query = this.releaseRepository
+      .createQueryBuilder('release')
       .where('release.org_id = :org_id', { org_id });
 
-    if (filters?.status) query.andWhere('release.status = :status', { status: filters.status });
+    if (filters?.status)
+      query.andWhere('release.status = :status', { status: filters.status });
 
     query.orderBy('release.release_date', 'DESC');
 
@@ -290,17 +342,23 @@ export class ProductService {
   }
 
   async findOneRelease(id: string, org_id: string) {
-    const release = await this.releaseRepository.findOne({ where: { id, org_id } });
+    const release = await this.releaseRepository.findOne({
+      where: { id, org_id },
+    });
     if (!release) throw new NotFoundException('Release not found');
 
     // Get associated features
-    const features = await this.featureRepository.find({ where: { release_id: id, org_id } });
+    const features = await this.featureRepository.find({
+      where: { release_id: id, org_id },
+    });
 
     return { success: true, data: { ...release, features } };
   }
 
   async updateRelease(id: string, org_id: string, updateDto: any) {
-    const release = await this.releaseRepository.findOne({ where: { id, org_id } });
+    const release = await this.releaseRepository.findOne({
+      where: { id, org_id },
+    });
     if (!release) throw new NotFoundException('Release not found');
 
     Object.assign(release, updateDto);
@@ -309,7 +367,9 @@ export class ProductService {
   }
 
   async removeRelease(id: string, org_id: string) {
-    const release = await this.releaseRepository.findOne({ where: { id, org_id } });
+    const release = await this.releaseRepository.findOne({
+      where: { id, org_id },
+    });
     if (!release) throw new NotFoundException('Release not found');
 
     await this.releaseRepository.remove(release);
@@ -331,12 +391,18 @@ export class ProductService {
   }
 
   async findAllFeedback(org_id: string, filters?: any) {
-    const query = this.feedbackRepository.createQueryBuilder('feedback')
+    const query = this.feedbackRepository
+      .createQueryBuilder('feedback')
       .where('feedback.org_id = :org_id', { org_id });
 
-    if (filters?.type) query.andWhere('feedback.type = :type', { type: filters.type });
-    if (filters?.status) query.andWhere('feedback.status = :status', { status: filters.status });
-    if (filters?.contact_id) query.andWhere('feedback.contact_id = :contact_id', { contact_id: filters.contact_id });
+    if (filters?.type)
+      query.andWhere('feedback.type = :type', { type: filters.type });
+    if (filters?.status)
+      query.andWhere('feedback.status = :status', { status: filters.status });
+    if (filters?.contact_id)
+      query.andWhere('feedback.contact_id = :contact_id', {
+        contact_id: filters.contact_id,
+      });
 
     query.orderBy('feedback.created_at', 'DESC');
 
@@ -345,13 +411,17 @@ export class ProductService {
   }
 
   async findOneFeedback(id: string, org_id: string) {
-    const feedback = await this.feedbackRepository.findOne({ where: { id, org_id } });
+    const feedback = await this.feedbackRepository.findOne({
+      where: { id, org_id },
+    });
     if (!feedback) throw new NotFoundException('Feedback not found');
     return { success: true, data: feedback };
   }
 
   async updateFeedback(id: string, org_id: string, updateDto: any) {
-    const feedback = await this.feedbackRepository.findOne({ where: { id, org_id } });
+    const feedback = await this.feedbackRepository.findOne({
+      where: { id, org_id },
+    });
     if (!feedback) throw new NotFoundException('Feedback not found');
 
     Object.assign(feedback, updateDto);
@@ -360,7 +430,9 @@ export class ProductService {
   }
 
   async removeFeedback(id: string, org_id: string) {
-    const feedback = await this.feedbackRepository.findOne({ where: { id, org_id } });
+    const feedback = await this.feedbackRepository.findOne({
+      where: { id, org_id },
+    });
     if (!feedback) throw new NotFoundException('Feedback not found');
 
     await this.feedbackRepository.remove(feedback);
@@ -383,11 +455,14 @@ export class ProductService {
   }
 
   async findAllRoadmaps(org_id: string, filters?: any) {
-    const query = this.roadmapRepository.createQueryBuilder('roadmap')
+    const query = this.roadmapRepository
+      .createQueryBuilder('roadmap')
       .where('roadmap.org_id = :org_id', { org_id });
 
-    if (filters?.type) query.andWhere('roadmap.type = :type', { type: filters.type });
-    if (filters?.status) query.andWhere('roadmap.status = :status', { status: filters.status });
+    if (filters?.type)
+      query.andWhere('roadmap.type = :type', { type: filters.type });
+    if (filters?.status)
+      query.andWhere('roadmap.status = :status', { status: filters.status });
 
     query.orderBy('roadmap.created_at', 'DESC');
 
@@ -396,13 +471,17 @@ export class ProductService {
   }
 
   async findOneRoadmap(id: string, org_id: string) {
-    const roadmap = await this.roadmapRepository.findOne({ where: { id, org_id } });
+    const roadmap = await this.roadmapRepository.findOne({
+      where: { id, org_id },
+    });
     if (!roadmap) throw new NotFoundException('Roadmap not found');
     return { success: true, data: roadmap };
   }
 
   async updateRoadmap(id: string, org_id: string, updateDto: any) {
-    const roadmap = await this.roadmapRepository.findOne({ where: { id, org_id } });
+    const roadmap = await this.roadmapRepository.findOne({
+      where: { id, org_id },
+    });
     if (!roadmap) throw new NotFoundException('Roadmap not found');
 
     Object.assign(roadmap, updateDto);
@@ -411,7 +490,9 @@ export class ProductService {
   }
 
   async removeRoadmap(id: string, org_id: string) {
-    const roadmap = await this.roadmapRepository.findOne({ where: { id, org_id } });
+    const roadmap = await this.roadmapRepository.findOne({
+      where: { id, org_id },
+    });
     if (!roadmap) throw new NotFoundException('Roadmap not found');
 
     await this.roadmapRepository.remove(roadmap);

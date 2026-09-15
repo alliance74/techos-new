@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsArray, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class UpdateGoalDto {
   @IsString()

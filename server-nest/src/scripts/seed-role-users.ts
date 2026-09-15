@@ -78,7 +78,9 @@ async function seedRoleUsers() {
         existingUser.status = 'active';
         existingUser.org_id = organization.id;
         await userRepo.save(existingUser);
-        console.log(`✅ Updated ${roleUser.role.toUpperCase()} user: ${roleUser.email} / ${roleUser.password}`);
+        console.log(
+          `✅ Updated ${roleUser.role.toUpperCase()} user: ${roleUser.email} / ${roleUser.password}`,
+        );
       } else {
         // Create new user
         const passwordHash = await bcrypt.hash(roleUser.password, 10);
@@ -94,7 +96,9 @@ async function seedRoleUsers() {
           status: 'active',
         });
         await userRepo.save(user);
-        console.log(`✅ Created ${roleUser.role.toUpperCase()} user: ${roleUser.email} / ${roleUser.password}`);
+        console.log(
+          `✅ Created ${roleUser.role.toUpperCase()} user: ${roleUser.email} / ${roleUser.password}`,
+        );
       }
     }
 
@@ -106,7 +110,6 @@ async function seedRoleUsers() {
     console.log('CISO:     ciso@gmail.com     / Ciso@2026');
     console.log('FINANCE:  finance@gmail.com  / Finance@2026');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-
   } catch (error) {
     console.error('❌ Error seeding role users:', error);
     process.exit(1);

@@ -1,4 +1,11 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Project } from './project.entity';
 import { Sprint } from './sprint.entity';
 
@@ -58,6 +65,10 @@ export class Task {
 
   @Column({ type: 'json', nullable: true })
   tags: string[];
+
+  /** Private tasks are only visible to the assignee, not the whole org */
+  @Column({ default: false })
+  is_private: boolean;
 
   @CreateDateColumn()
   created_at: Date;

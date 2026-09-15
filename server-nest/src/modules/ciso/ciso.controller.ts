@@ -41,7 +41,10 @@ export class CisoController {
   }
 
   @Get('audits')
-  getAudits(@CurrentUser() user: any, @Query() query: GetCisoAuditProjectsQueryDto) {
+  getAudits(
+    @CurrentUser() user: any,
+    @Query() query: GetCisoAuditProjectsQueryDto,
+  ) {
     this.ensureCisoAccess(user);
     return this.cisoService.getAudits(user.org_id, query.status);
   }
@@ -53,7 +56,11 @@ export class CisoController {
   }
 
   @Put('audits/:id')
-  updateAudit(@CurrentUser() user: any, @Param('id') id: string, @Body() body: UpdateProjectAuditDto) {
+  updateAudit(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: UpdateProjectAuditDto,
+  ) {
     this.ensureCisoAccess(user);
     return this.cisoService.updateAudit(user.org_id, id, body);
   }
@@ -71,7 +78,10 @@ export class CisoController {
   }
 
   @Get('audit-tasks')
-  getAuditTasks(@CurrentUser() user: any, @Query() query: GetAuditTasksQueryDto) {
+  getAuditTasks(
+    @CurrentUser() user: any,
+    @Query() query: GetAuditTasksQueryDto,
+  ) {
     this.ensureCisoAccess(user);
     return this.cisoService.getAuditTasks(user.org_id, query);
   }
@@ -83,7 +93,11 @@ export class CisoController {
   }
 
   @Put('audit-tasks/:id')
-  updateAuditTask(@CurrentUser() user: any, @Param('id') id: string, @Body() body: UpdateAuditTaskDto) {
+  updateAuditTask(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: UpdateAuditTaskDto,
+  ) {
     this.ensureCisoAccess(user);
     return this.cisoService.updateAuditTask(user.org_id, id, body);
   }
@@ -95,7 +109,11 @@ export class CisoController {
     @Body() body: UpdateCisoTaskStatusDto,
   ) {
     this.ensureCisoAccess(user);
-    return this.cisoService.updateAuditTaskStatus(user.org_id, id, Boolean(body.finished));
+    return this.cisoService.updateAuditTaskStatus(
+      user.org_id,
+      id,
+      Boolean(body.finished),
+    );
   }
 
   @Delete('audit-tasks/:id')

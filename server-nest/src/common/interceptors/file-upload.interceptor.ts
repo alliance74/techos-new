@@ -37,7 +37,10 @@ export class FileUploadInterceptor implements NestInterceptor {
       );
     }
 
-    if (this.allowedMimeTypes && !this.allowedMimeTypes.includes(file.mimetype)) {
+    if (
+      this.allowedMimeTypes &&
+      !this.allowedMimeTypes.includes(file.mimetype)
+    ) {
       throw new BadRequestException(
         `File type ${file.mimetype} is not allowed. Allowed types: ${this.allowedMimeTypes.join(', ')}`,
       );

@@ -25,8 +25,15 @@ export class DocumentsController {
   constructor(private documentsService: DocumentsService) {}
 
   @Post()
-  create(@CurrentUser() user: any, @Body() createDocumentDto: CreateDocumentDto) {
-    return this.documentsService.create(user.org_id, user.id, createDocumentDto);
+  create(
+    @CurrentUser() user: any,
+    @Body() createDocumentDto: CreateDocumentDto,
+  ) {
+    return this.documentsService.create(
+      user.org_id,
+      user.id,
+      createDocumentDto,
+    );
   }
 
   @Post('upload')
@@ -36,7 +43,12 @@ export class DocumentsController {
     @UploadedFile() file: Express.Multer.File,
     @Body() metadata?: any,
   ) {
-    return this.documentsService.uploadFile(user.org_id, user.id, file, metadata);
+    return this.documentsService.uploadFile(
+      user.org_id,
+      user.id,
+      file,
+      metadata,
+    );
   }
 
   @Post(':id/file')
@@ -99,7 +111,11 @@ export class DocumentsController {
   }
 
   @Put(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.documentsService.update(id, user.org_id, updateData);
   }
 
@@ -119,7 +135,12 @@ export class DocumentsController {
     @Param('id') id: string,
     @Body() body: { content: string },
   ) {
-    return this.documentsService.createVersion(id, user.org_id, user.id, body.content);
+    return this.documentsService.createVersion(
+      id,
+      user.org_id,
+      user.id,
+      body.content,
+    );
   }
 
   @Get(':id/versions')

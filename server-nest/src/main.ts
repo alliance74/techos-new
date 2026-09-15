@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable CORS
   const allowedOrigins = [
     'http://localhost:5173',
@@ -20,21 +20,25 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true,
   });
-  
+
   // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-  }));
-  
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
   // API prefix
   app.setGlobalPrefix('api');
-  
+
   // Swagger API Documentation
   const config = new DocumentBuilder()
     .setTitle('TechOS API')
-    .setDescription('The Operating System for Software Companies - Complete API Documentation')
+    .setDescription(
+      'The Operating System for Software Companies - Complete API Documentation',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('Auth', 'Authentication and authorization')
@@ -73,10 +77,10 @@ async function bootstrap() {
       showRequestDuration: true,
     },
   });
-  
+
   const port = process.env.PORT || 4000;
   await app.listen(port);
-  
+
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║

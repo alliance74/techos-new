@@ -7,7 +7,9 @@ import { Meeting } from '../../entities/meeting.entity';
 import { MeetingParticipant } from '../../entities/meeting-participant.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CalendarEvent, Meeting, MeetingParticipant])],
+  imports: [
+    TypeOrmModule.forFeature([CalendarEvent, Meeting, MeetingParticipant]),
+  ],
   controllers: [CalendarController],
   providers: [CalendarService],
   exports: [CalendarService],

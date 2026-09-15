@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AnnouncementsService } from './announcements.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -31,7 +42,11 @@ export class AnnouncementsController {
   }
 
   @Put(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateDto: UpdateAnnouncementDto) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateDto: UpdateAnnouncementDto,
+  ) {
     return this.announcementsService.update(id, user.org_id, updateDto);
   }
 
