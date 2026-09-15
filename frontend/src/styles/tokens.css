@@ -92,3 +92,72 @@
 
   color-scheme: light;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Dark Mode
+   ═══════════════════════════════════════════════════════════════ */
+.dark,
+[data-theme="dark"] {
+  /* ——— Brand ——— */
+  --brand: #6a9cfd;
+  --brand-soft: #4a7ee0;
+  --brand-deep: #8bb4fe;
+  --brand-mist: #1e293b;
+  --brand-wash: #0f172a;
+  --brand-rgb: 106 156 253;
+
+  /* ——— Surfaces ——— */
+  --bg: #0f172a;
+  --bg-elevated: #1e293b;
+  --bg-muted: #1e293b;
+  --bg-subtle: #1e293b;
+  --bg-inverse: #f1f5f9;
+
+  --surface: #1e293b;
+  --surface-hover: #334155;
+  --surface-active: #334155;
+
+  /* ——— Borders ——— */
+  --border: #334155;
+  --border-strong: #475569;
+  --border-focus: #6a9cfd;
+
+  /* ——— Text ——— */
+  --text: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+  --text-link: #6a9cfd;
+
+  /* ——— Status ——— */
+  --success: #22c55e;
+  --success-soft: #14532d;
+  --success-text: #4ade80;
+  --warning: #f59e0b;
+  --warning-soft: #713f12;
+  --warning-text: #fbbf24;
+  --danger: #ef4444;
+  --danger-soft: #7f1d1d;
+  --danger-text: #fca5a5;
+  --info: #6a9cfd;
+  --info-soft: #1e3a5f;
+  --info-text: #93c5fd;
+
+  /* ——— Sidebar / chrome ——— */
+  --sidebar-bg: #0f172a;
+  --sidebar-border: #1e293b;
+  --sidebar-text: #94a3b8;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active: #6a9cfd;
+  --sidebar-hover: #1e293b;
+  --topbar-bg: #0f172a;
+  --topbar-border: #1e293b;
+
+  /* ——— Shadows ——— */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5), 0 4px 12px rgb(0 0 0 / 0.3);
+  --shadow-auth: 0 25px 50px -12px rgb(0 0 0 / 0.5), 0 12px 24px -8px rgb(0 0 0 / 0.3);
+
+  color-scheme: dark;
+}

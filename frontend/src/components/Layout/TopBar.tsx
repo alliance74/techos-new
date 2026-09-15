@@ -1,6 +1,7 @@
 'use client';
 
 import { Bell, Search, LogOut, User, Settings, Check } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthStore } from '@/store/authStore';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -97,6 +98,7 @@ export function TopBar({ settingsHref = '/ceo/settings', profileHref = '/ceo/set
         </form>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           <div className="relative" ref={notifRef}>
             <button
               type="button"
