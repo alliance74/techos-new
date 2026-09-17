@@ -1,8 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
-import { createReadStream, existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';
+import {
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
 import { extname, join } from 'path';
 import { Document } from '../../entities/document.entity';
 import { User } from '../../entities/user.entity';
@@ -27,7 +37,11 @@ export class DocumentsService {
     }
   }
 
-  private saveLocalFile(org_id: string, documentId: string, file: Express.Multer.File) {
+  private saveLocalFile(
+    org_id: string,
+    documentId: string,
+    file: Express.Multer.File,
+  ) {
     const orgDir = join(this.uploadsRoot, org_id);
     this.ensureDir(orgDir);
     const ext = extname(file.originalname || '') || '';
@@ -39,20 +53,29 @@ export class DocumentsService {
 
   private toFileDto(document: Document) {
     const remote =
-      typeof document.content === 'string' && /^https?:\/\//i.test(document.content)
+      typeof document.content === 'string' &&
+      /^https?:\/\//i.test(document.content)
         ? document.content
         : null;
     const can_view = Boolean(remote || document.storage_path);
     return {
       ...document,
-      file_url: remote || (document.storage_path ? `/documents/${document.id}/file` : document.content),
+      file_url:
+        remote ||
+        (document.storage_path
+          ? `/documents/${document.id}/file`
+          : document.content),
       file_type: document.file_mime || undefined,
       file_size: document.file_size ?? undefined,
       can_view,
     };
   }
 
-  async create(org_id: string, user_id: string, createDocumentDto: CreateDocumentDto) {
+  async create(
+    org_id: string,
+    user_id: string,
+    createDocumentDto: CreateDocumentDto,
+  ) {
     const document = this.documentsRepository.create({
       id: randomUUID(),
       org_id,
@@ -73,7 +96,12 @@ export class DocumentsService {
     };
   }
 
-  async uploadFile(org_id: string, user_id: string, file: Express.Multer.File, metadata?: any) {
+  async uploadFile(
+    org_id: string,
+    user_id: string,
+    file: Express.Multer.File,
+    metadata?: any,
+  ) {
     if (!file?.buffer?.length) {
       throw new BadRequestException('No file uploaded');
     }
@@ -84,7 +112,10 @@ export class DocumentsService {
     const fileType = file.mimetype || 'application/octet-stream';
 
     try {
-      const uploadResult = await this.cloudinaryService.uploadFile(file, `techos/${org_id}/documents`);
+      const uploadResult = await this.cloudinaryService.uploadFile(
+        file,
+        `techos/${org_id}/documents`,
+      );
       if (uploadResult?.secure_url) {
         fileUrl = uploadResult.secure_url;
       }
@@ -92,11 +123,14 @@ export class DocumentsService {
       // Local file remains viewable when Cloudinary is unavailable.
     }
 
-    const relatedType = metadata?.related_entity_type || metadata?.relatedEntityType;
+    const relatedType =
+      metadata?.related_entity_type || metadata?.relatedEntityType;
     const relatedId = metadata?.related_entity_id || metadata?.relatedEntityId;
     const folder =
       metadata?.folder ||
-      (relatedType && relatedId ? `related/${relatedType}/${relatedId}` : undefined);
+      (relatedType && relatedId
+        ? `related/${relatedType}/${relatedId}`
+        : undefined);
 
     const tags = [
       ...(Array.isArray(metadata?.tags) ? metadata.tags : []),
@@ -133,7 +167,9 @@ export class DocumentsService {
       throw new BadRequestException('No file uploaded');
     }
 
-    const document = await this.documentsRepository.findOne({ where: { id, org_id } });
+    const document = await this.documentsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!document) {
       throw new NotFoundException('Document not found');
     }
@@ -155,7 +191,10 @@ export class DocumentsService {
     const fileType = file.mimetype || 'application/octet-stream';
 
     try {
-      const uploadResult = await this.cloudinaryService.uploadFile(file, `techos/${org_id}/documents`);
+      const uploadResult = await this.cloudinaryService.uploadFile(
+        file,
+        `techos/${org_id}/documents`,
+      );
       if (uploadResult?.secure_url) {
         fileUrl = uploadResult.secure_url;
       }
@@ -167,7 +206,8 @@ export class DocumentsService {
     document.storage_path = storage_path;
     document.file_mime = fileType;
     document.file_size = file.size;
-    document.type = document.type === 'folder' ? 'file' : document.type || 'file';
+    document.type =
+      document.type === 'folder' ? 'file' : document.type || 'file';
     if (!document.title || document.title === 'Untitled') {
       document.title = file.originalname;
     }
@@ -224,7 +264,10 @@ export class DocumentsService {
       }
     }
 
-    if (typeof document.content === 'string' && /^https?:\/\//i.test(document.content)) {
+    if (
+      typeof document.content === 'string' &&
+      /^https?:\/\//i.test(document.content)
+    ) {
       return {
         kind: 'remote' as const,
         url: document.content,
@@ -255,14 +298,21 @@ export class DocumentsService {
       order: { created_at: 'DESC' },
     });
 
-    const creatorIds = [...new Set(documents.map((d) => d.created_by).filter(Boolean))];
+    const creatorIds = [
+      ...new Set(documents.map((d) => d.created_by).filter(Boolean)),
+    ];
     const creators = creatorIds.length
-      ? await this.usersRepository.find({ where: { id: In(creatorIds) as any } })
+      ? await this.usersRepository.find({
+          where: { id: In(creatorIds) as any },
+        })
       : [];
     const byId = Object.fromEntries(
       creators.map((u) => [
         u.id,
-        u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || null,
+        u.name ||
+          `${u.first_name || ''} ${u.last_name || ''}`.trim() ||
+          u.email ||
+          null,
       ]),
     );
 
@@ -416,7 +466,12 @@ export class DocumentsService {
     };
   }
 
-  async createVersion(id: string, org_id: string, user_id: string, content: string) {
+  async createVersion(
+    id: string,
+    org_id: string,
+    user_id: string,
+    content: string,
+  ) {
     const document = await this.documentsRepository.findOne({
       where: { id, org_id },
     });
@@ -451,7 +506,9 @@ export class DocumentsService {
   }
 
   async getVersions(id: string, org_id: string) {
-    const document = await this.documentsRepository.findOne({ where: { id, org_id } });
+    const document = await this.documentsRepository.findOne({
+      where: { id, org_id },
+    });
     if (!document) {
       throw new NotFoundException('Document not found');
     }
@@ -470,7 +527,11 @@ export class DocumentsService {
     return { success: true, data: versions };
   }
 
-  async createFolder(org_id: string, user_id: string, folderData: { name: string; parent_folder_id?: string }) {
+  async createFolder(
+    org_id: string,
+    user_id: string,
+    folderData: { name: string; parent_folder_id?: string },
+  ) {
     const folderName = folderData.parent_folder_id
       ? `${folderData.parent_folder_id}/${folderData.name}`
       : folderData.name;

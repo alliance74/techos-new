@@ -23,8 +23,15 @@ export class FinanceController {
 
   // Invoices
   @Post('invoices')
-  createInvoice(@CurrentUser() user: any, @Body() createInvoiceDto: CreateInvoiceDto) {
-    return this.financeService.createInvoice(user.org_id, createInvoiceDto, user);
+  createInvoice(
+    @CurrentUser() user: any,
+    @Body() createInvoiceDto: CreateInvoiceDto,
+  ) {
+    return this.financeService.createInvoice(
+      user.org_id,
+      createInvoiceDto,
+      user,
+    );
   }
 
   @Get('invoices')
@@ -38,7 +45,11 @@ export class FinanceController {
   }
 
   @Put('invoices/:id')
-  updateInvoice(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  updateInvoice(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.financeService.updateInvoice(id, user.org_id, updateData, user);
   }
 
@@ -53,13 +64,24 @@ export class FinanceController {
     @Param('id') id: string,
     @Body() body: { recipient_email: string },
   ) {
-    return this.financeService.sendInvoice(id, user.org_id, body.recipient_email);
+    return this.financeService.sendInvoice(
+      id,
+      user.org_id,
+      body.recipient_email,
+    );
   }
 
   // Expenses
   @Post('expenses')
-  createExpense(@CurrentUser() user: any, @Body() createExpenseDto: CreateExpenseDto) {
-    return this.financeService.createExpense(user.org_id, user, createExpenseDto);
+  createExpense(
+    @CurrentUser() user: any,
+    @Body() createExpenseDto: CreateExpenseDto,
+  ) {
+    return this.financeService.createExpense(
+      user.org_id,
+      user,
+      createExpenseDto,
+    );
   }
 
   @Get('expenses')
@@ -73,7 +95,11 @@ export class FinanceController {
   }
 
   @Put('expenses/:id')
-  updateExpense(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  updateExpense(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.financeService.updateExpense(id, user.org_id, updateData);
   }
 
@@ -84,7 +110,12 @@ export class FinanceController {
 
   @Post('expenses/:id/approve')
   approveExpense(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.financeService.approveExpense(id, user.org_id, user.id, user.role);
+    return this.financeService.approveExpense(
+      id,
+      user.org_id,
+      user.id,
+      user.role,
+    );
   }
 
   @Post('expenses/:id/reject')
@@ -93,13 +124,26 @@ export class FinanceController {
     @Param('id') id: string,
     @Body() body: { reason?: string },
   ) {
-    return this.financeService.rejectExpense(id, user.org_id, user.id, user.role, body.reason);
+    return this.financeService.rejectExpense(
+      id,
+      user.org_id,
+      user.id,
+      user.role,
+      body.reason,
+    );
   }
 
   // Budgets
   @Post('budgets')
-  createBudget(@CurrentUser() user: any, @Body() createBudgetDto: CreateBudgetDto) {
-    return this.financeService.createBudget(user.org_id, user.id, createBudgetDto);
+  createBudget(
+    @CurrentUser() user: any,
+    @Body() createBudgetDto: CreateBudgetDto,
+  ) {
+    return this.financeService.createBudget(
+      user.org_id,
+      user.id,
+      createBudgetDto,
+    );
   }
 
   @Get('budgets')
@@ -113,7 +157,11 @@ export class FinanceController {
   }
 
   @Put('budgets/:id')
-  updateBudget(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  updateBudget(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.financeService.updateBudget(id, user.org_id, updateData);
   }
 
@@ -129,6 +177,10 @@ export class FinanceController {
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
   ) {
-    return this.financeService.getFinancialSummary(user.org_id, start_date, end_date);
+    return this.financeService.getFinancialSummary(
+      user.org_id,
+      start_date,
+      end_date,
+    );
   }
 }

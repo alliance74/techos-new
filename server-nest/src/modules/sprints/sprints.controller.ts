@@ -1,12 +1,26 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SprintsService } from './sprints.service';
+import { SprintAnalyticsService } from './sprint-analytics.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('sprints')
 @UseGuards(JwtAuthGuard)
 export class SprintsController {
-  constructor(private sprintsService: SprintsService) {}
+  constructor(
+    private sprintsService: SprintsService,
+    private analyticsService: SprintAnalyticsService,
+  ) {}
 
   @Post()
   create(@CurrentUser() user: any, @Body() createSprintDto: any) {
@@ -34,7 +48,11 @@ export class SprintsController {
   }
 
   @Put(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateSprintDto: any) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateSprintDto: any,
+  ) {
     return this.sprintsService.update(id, user.org_id, updateSprintDto, user);
   }
 
@@ -54,7 +72,12 @@ export class SprintsController {
     @Param('sprintId') sprintId: string,
     @Param('taskId') taskId: string,
   ) {
-    return this.sprintsService.addTaskToSprint(sprintId, taskId, user.org_id, user);
+    return this.sprintsService.addTaskToSprint(
+      sprintId,
+      taskId,
+      user.org_id,
+      user,
+    );
   }
 
   @Delete(':sprintId/tasks/:taskId')
@@ -63,11 +86,38 @@ export class SprintsController {
     @Param('sprintId') sprintId: string,
     @Param('taskId') taskId: string,
   ) {
-    return this.sprintsService.removeTaskFromSprint(sprintId, taskId, user.org_id, user);
+    return this.sprintsService.removeTaskFromSprint(
+      sprintId,
+      taskId,
+      user.org_id,
+      user,
+    );
   }
 
   @Delete(':id')
   remove(@CurrentUser() user: any, @Param('id') id: string) {
     return this.sprintsService.remove(id, user.org_id, user);
+  }
+
+  // --- Sprint Analytics Dashboard ---
+
+  @Get('analytics/dashboard')
+  getDashboard(@CurrentUser() user: any) {
+    return this.analyticsService.getDashboard(user.org_id);
+  }
+
+  @Get('analytics/:id/detail')
+  getSprintDetail(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.analyticsService.getSprintDetail(user.org_id, id);
+  }
+
+  @Get('analytics/:id/burndown')
+  getSprintBurndown(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.analyticsService.getSprintBurndown(user.org_id, id);
+  }
+
+  @Get('analytics/velocity')
+  getVelocityComparison(@CurrentUser() user: any) {
+    return this.analyticsService.getVelocityComparison(user.org_id);
   }
 }

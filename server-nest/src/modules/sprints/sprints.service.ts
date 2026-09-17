@@ -23,13 +23,22 @@ export class SprintsService {
     private tasksRepository: Repository<Task>,
   ) {}
 
-  private async getAccessibleProjectIds(org_id: string, user?: ProjectViewer): Promise<string[]> {
+  private async getAccessibleProjectIds(
+    org_id: string,
+    user?: ProjectViewer,
+  ): Promise<string[]> {
     const projects = await this.projectsRepository.find({ where: { org_id } });
     return projects.filter((p) => canViewProject(p, user)).map((p) => p.id);
   }
 
-  private async assertProjectAccess(project_id: string, org_id: string, user?: ProjectViewer) {
-    const project = await this.projectsRepository.findOne({ where: { id: project_id, org_id } });
+  private async assertProjectAccess(
+    project_id: string,
+    org_id: string,
+    user?: ProjectViewer,
+  ) {
+    const project = await this.projectsRepository.findOne({
+      where: { id: project_id, org_id },
+    });
     if (!project) {
       throw new NotFoundException('Project not found');
     }
@@ -99,23 +108,41 @@ export class SprintsService {
     return { success: true, data: sprint };
   }
 
-  async update(id: string, org_id: string, updateSprintDto: any, user?: ProjectViewer) {
+  async update(
+    id: string,
+    org_id: string,
+    updateSprintDto: any,
+    user?: ProjectViewer,
+  ) {
     const sprint = await this.findOne(id, org_id, user);
-    if (updateSprintDto?.project_id && updateSprintDto.project_id !== sprint.data.project_id) {
+    if (
+      updateSprintDto?.project_id &&
+      updateSprintDto.project_id !== sprint.data.project_id
+    ) {
       await this.assertProjectAccess(updateSprintDto.project_id, org_id, user);
     }
 
     const payload: any = {};
-    if (updateSprintDto.name !== undefined || updateSprintDto.title !== undefined) {
+    if (
+      updateSprintDto.name !== undefined ||
+      updateSprintDto.title !== undefined
+    ) {
       payload.name = updateSprintDto.name ?? updateSprintDto.title;
     }
-    if (updateSprintDto.goal !== undefined || updateSprintDto.description !== undefined) {
+    if (
+      updateSprintDto.goal !== undefined ||
+      updateSprintDto.description !== undefined
+    ) {
       payload.goal = updateSprintDto.goal ?? updateSprintDto.description;
     }
-    if (updateSprintDto.start_date !== undefined) payload.start_date = updateSprintDto.start_date;
-    if (updateSprintDto.end_date !== undefined) payload.end_date = updateSprintDto.end_date;
-    if (updateSprintDto.status !== undefined) payload.status = updateSprintDto.status;
-    if (updateSprintDto.project_id !== undefined) payload.project_id = updateSprintDto.project_id;
+    if (updateSprintDto.start_date !== undefined)
+      payload.start_date = updateSprintDto.start_date;
+    if (updateSprintDto.end_date !== undefined)
+      payload.end_date = updateSprintDto.end_date;
+    if (updateSprintDto.status !== undefined)
+      payload.status = updateSprintDto.status;
+    if (updateSprintDto.project_id !== undefined)
+      payload.project_id = updateSprintDto.project_id;
 
     await this.sprintsRepository.update(id, payload);
     const updated = await this.sprintsRepository.findOne({ where: { id } });
@@ -125,28 +152,41 @@ export class SprintsService {
   async remove(id: string, org_id: string, user?: ProjectViewer) {
     await this.findOne(id, org_id, user);
     // Unassign tasks from this sprint before deleting, returning them to backlog
-    await this.tasksRepository.update({ sprint_id: id }, { sprint_id: null as any });
+    await this.tasksRepository.update(
+      { sprint_id: id },
+      { sprint_id: null as any },
+    );
     await this.sprintsRepository.delete(id);
-    return { success: true, message: 'Sprint deleted successfully and tasks returned to backlog' };
+    return {
+      success: true,
+      message: 'Sprint deleted successfully and tasks returned to backlog',
+    };
   }
 
   async getStats(id: string, org_id: string, user?: ProjectViewer) {
     await this.findOne(id, org_id, user);
     const tasks = await this.tasksRepository.find({ where: { sprint_id: id } });
     const totalTasks = tasks.length;
-    const completedTasks = tasks.filter((task) => task.status === 'done').length;
+    const completedTasks = tasks.filter(
+      (task) => task.status === 'done',
+    ).length;
 
     return {
       success: true,
       data: {
         total_tasks: totalTasks,
         completed_tasks: completedTasks,
-        completion_rate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+        completion_rate:
+          totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
       },
     };
   }
 
-  async findActiveSprint(project_id: string, org_id: string, user?: ProjectViewer) {
+  async findActiveSprint(
+    project_id: string,
+    org_id: string,
+    user?: ProjectViewer,
+  ) {
     await this.assertProjectAccess(project_id, org_id, user);
 
     const sprint = await this.sprintsRepository
@@ -181,9 +221,14 @@ export class SprintsService {
     }
 
     // Trello flow: unfinished cards return to the product Backlog; Done stays for history.
-    const sprintTasks = await this.tasksRepository.find({ where: { sprint_id: id } });
+    const sprintTasks = await this.tasksRepository.find({
+      where: { sprint_id: id },
+    });
     const incomplete = sprintTasks.filter(
-      (t) => !['done', 'completed', 'closed', 'resolved'].includes(String(t.status || '').toLowerCase()),
+      (t) =>
+        !['done', 'completed', 'closed', 'resolved'].includes(
+          String(t.status || '').toLowerCase(),
+        ),
     );
     for (const task of incomplete) {
       await this.tasksRepository.update(task.id, {
@@ -202,7 +247,12 @@ export class SprintsService {
     };
   }
 
-  async addTaskToSprint(sprint_id: string, task_id: string, org_id: string, user?: ProjectViewer) {
+  async addTaskToSprint(
+    sprint_id: string,
+    task_id: string,
+    org_id: string,
+    user?: ProjectViewer,
+  ) {
     await this.findOne(sprint_id, org_id, user);
     const task = await this.tasksRepository
       .createQueryBuilder('task')

@@ -31,7 +31,11 @@ export class ChannelsController {
   /** Find or create a 1:1 direct message channel with another user. */
   @Post('direct')
   openDirect(@CurrentUser() user: any, @Body() body: { user_id: string }) {
-    return this.channelsService.findOrCreateDirect(user.org_id, user.id, body.user_id);
+    return this.channelsService.findOrCreateDirect(
+      user.org_id,
+      user.id,
+      body.user_id,
+    );
   }
 
   @Get()
@@ -45,7 +49,11 @@ export class ChannelsController {
   }
 
   @Put(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() updateData: any) {
+  update(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
     return this.channelsService.update(id, user.org_id, user.id, updateData);
   }
 
@@ -61,7 +69,12 @@ export class ChannelsController {
     @Param('id') id: string,
     @Body() body: { member_ids: string[] },
   ) {
-    return this.channelsService.addMembers(id, user.org_id, user.id, body.member_ids);
+    return this.channelsService.addMembers(
+      id,
+      user.org_id,
+      user.id,
+      body.member_ids,
+    );
   }
 
   @Delete(':id/members/:userId')
@@ -92,7 +105,8 @@ export class ChannelsController {
   postChannelMessage(
     @CurrentUser() user: any,
     @Param('id') id: string,
-    @Body() body: { content: string; parent_message_id?: string; mentions?: string[] },
+    @Body()
+    body: { content: string; parent_message_id?: string; mentions?: string[] },
   ) {
     return this.messagesService.create(user.id, {
       channel_id: id,

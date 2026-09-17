@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -33,7 +37,8 @@ export class IntegrationsService {
   }
 
   async findAll(org_id: string, filters?: any) {
-    const query = this.integrationRepository.createQueryBuilder('integration')
+    const query = this.integrationRepository
+      .createQueryBuilder('integration')
       .where('integration.org_id = :org_id', { org_id });
 
     if (filters?.type) {
@@ -41,7 +46,9 @@ export class IntegrationsService {
     }
 
     if (filters?.enabled !== undefined) {
-      query.andWhere('integration.enabled = :enabled', { enabled: filters.enabled });
+      query.andWhere('integration.enabled = :enabled', {
+        enabled: filters.enabled,
+      });
     }
 
     query.orderBy('integration.created_at', 'DESC');
@@ -181,46 +188,52 @@ export class IntegrationsService {
   // Integration-specific methods
   async syncGitHubIssues(org_id: string, repo: string) {
     const integration = await this.findByType(org_id, 'github');
-    
+
     if (!integration || !integration.enabled) {
       throw new BadRequestException('GitHub integration not configured');
     }
 
     // TODO: Implement actual GitHub API calls
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'GitHub issues sync initiated',
-      note: 'Implementation requires GitHub API client'
+      note: 'Implementation requires GitHub API client',
     };
   }
 
   async syncGoogleCalendar(org_id: string) {
     const integration = await this.findByType(org_id, 'google_calendar');
-    
+
     if (!integration || !integration.enabled) {
-      throw new BadRequestException('Google Calendar integration not configured');
+      throw new BadRequestException(
+        'Google Calendar integration not configured',
+      );
     }
 
     // TODO: Implement actual Google Calendar API calls
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Google Calendar sync initiated',
-      note: 'Implementation requires Google Calendar API client'
+      note: 'Implementation requires Google Calendar API client',
     };
   }
 
-  async sendSlackNotification(org_id: string, channel: string, message: string) {
+  async sendSlackNotification(
+    org_id: string,
+    channel: string,
+    message: string,
+  ) {
     const integration = await this.findByType(org_id, 'slack');
-    
+
     if (!integration || !integration.enabled) {
       throw new BadRequestException('Slack integration not configured');
     }
 
     // TODO: Implement actual Slack API calls
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Slack notification sent',
-      note: 'Implementation requires Slack API client'
+      note: 'Implementation requires Slack API client',
     };
   }
 
@@ -228,18 +241,66 @@ export class IntegrationsService {
     return {
       success: true,
       data: [
-        { type: 'github', name: 'GitHub', description: 'Sync repositories, issues, and commits' },
-        { type: 'gitlab', name: 'GitLab', description: 'Sync projects, issues, and merge requests' },
-        { type: 'google_calendar', name: 'Google Calendar', description: 'Sync meetings and events' },
-        { type: 'microsoft_outlook', name: 'Microsoft Outlook', description: 'Sync calendar and emails' },
-        { type: 'zoom', name: 'Zoom', description: 'Create and manage meetings' },
-        { type: 'google_meet', name: 'Google Meet', description: 'Create and manage meetings' },
-        { type: 'slack', name: 'Slack', description: 'Send notifications and messages' },
-        { type: 'discord', name: 'Discord', description: 'Send notifications and messages' },
-        { type: 'stripe', name: 'Stripe', description: 'Process payments and subscriptions' },
-        { type: 'quickbooks', name: 'QuickBooks', description: 'Sync financial data' },
-        { type: 'google_drive', name: 'Google Drive', description: 'Store and sync files' },
-        { type: 'dropbox', name: 'Dropbox', description: 'Store and sync files' },
+        {
+          type: 'github',
+          name: 'GitHub',
+          description: 'Sync repositories, issues, and commits',
+        },
+        {
+          type: 'gitlab',
+          name: 'GitLab',
+          description: 'Sync projects, issues, and merge requests',
+        },
+        {
+          type: 'google_calendar',
+          name: 'Google Calendar',
+          description: 'Sync meetings and events',
+        },
+        {
+          type: 'microsoft_outlook',
+          name: 'Microsoft Outlook',
+          description: 'Sync calendar and emails',
+        },
+        {
+          type: 'zoom',
+          name: 'Zoom',
+          description: 'Create and manage meetings',
+        },
+        {
+          type: 'google_meet',
+          name: 'Google Meet',
+          description: 'Create and manage meetings',
+        },
+        {
+          type: 'slack',
+          name: 'Slack',
+          description: 'Send notifications and messages',
+        },
+        {
+          type: 'discord',
+          name: 'Discord',
+          description: 'Send notifications and messages',
+        },
+        {
+          type: 'stripe',
+          name: 'Stripe',
+          description: 'Process payments and subscriptions',
+        },
+        {
+          type: 'quickbooks',
+          name: 'QuickBooks',
+          description: 'Sync financial data',
+        },
+        {
+          type: 'google_drive',
+          name: 'Google Drive',
+          description: 'Store and sync files',
+        },
+        {
+          type: 'dropbox',
+          name: 'Dropbox',
+          description: 'Store and sync files',
+        },
       ],
     };
   }

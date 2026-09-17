@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { AiConversation } from './ai-conversation.entity';
 
 @Entity('ai_messages')
@@ -9,7 +17,9 @@ export class AiMessage {
   @Column({ name: 'conversation_id' })
   conversationId: string;
 
-  @ManyToOne(() => AiConversation, conversation => conversation.messages, { onDelete: 'CASCADE' })
+  @ManyToOne(() => AiConversation, (conversation) => conversation.messages, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'conversation_id' })
   conversation: AiConversation;
 
