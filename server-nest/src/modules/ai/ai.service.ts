@@ -5,7 +5,7 @@ import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { AiConversation } from '../../entities/ai-conversation.entity';
 import { AiMessage } from '../../entities/ai-message.entity';
@@ -163,7 +163,10 @@ export class AiService {
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     let usage = await this.usageRepository.findOne({
-      where: { userId: user_id },
+      where: {
+        userId: user_id,
+        periodStart: Between(periodStart, periodEnd),
+      },
     });
 
     if (!usage) {

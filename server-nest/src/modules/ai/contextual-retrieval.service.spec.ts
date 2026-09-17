@@ -15,7 +15,7 @@ describe('ContextualRetrievalService', () => {
   const mockRepo = () => ({
     find: jest.fn().mockResolvedValue([]),
     findOne: jest.fn().mockResolvedValue(null),
-   createQueryBuilder: jest.fn(() => ({
+    createQueryBuilder: jest.fn(() => ({
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
@@ -45,8 +45,19 @@ describe('ContextualRetrievalService', () => {
   });
 
   describe('extractIntent', () => {
-    it('should detect task-related domains', () => {
+    it('should detect task-related domains (singular)', () => {
+      const intent = service.extractIntent('Show me the current task');
+      expect(intent.domains).toContain('tasks');
+    });
+
+    it('should detect task-related domains (plural)', () => {
+      const intent = service.extractIntent('Show me the current tasks');
+      expect(intent.domains).toContain('tasks');
+    });
+
+    it('should detect sprint and task together', () => {
       const intent = service.extractIntent('Show me the current sprint tasks');
+      expect(intent.domains).toContain('sprints');
       expect(intent.domains).toContain('tasks');
     });
 
@@ -55,8 +66,13 @@ describe('ContextualRetrievalService', () => {
       expect(intent.domains).toContain('projects');
     });
 
-    it('should detect bug-related domains', () => {
+    it('should detect bug-related domains (plural)', () => {
       const intent = service.extractIntent('What critical bugs are open?');
+      expect(intent.domains).toContain('bugs');
+    });
+
+    it('should detect bug-related domains (singular)', () => {
+      const intent = service.extractIntent('Show me this bug');
       expect(intent.domains).toContain('bugs');
     });
 

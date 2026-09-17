@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { SprintAnalyticsService } from './sprint-analytics.service';
-import { Project } from '../../entities/project.entity';
 import { Task } from '../../entities/task.entity';
 import { Sprint } from '../../entities/sprint.entity';
 import { NotFoundException } from '@nestjs/common';
@@ -10,18 +8,33 @@ import { NotFoundException } from '@nestjs/common';
 describe('SprintAnalyticsService', () => {
   let service: SprintAnalyticsService;
 
-  const mockRepo = () => ({
+  const createMockQueryBuilder = (returnData: any[] = []) => {
+    const qb: any = {
+      innerJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue(returnData),
+    };
+    return qb;
+  };
+
+  const mockSprintRepo = () => ({
     find: jest.fn().mockResolvedValue([]),
     findOne: jest.fn().mockResolvedValue(null),
+  });
+
+  const mockTaskRepo = (tasks: any[] = []) => ({
+    find: jest.fn().mockResolvedValue(tasks),
+    findOne: jest.fn().mockResolvedValue(null),
+    createQueryBuilder: jest.fn(() => createMockQueryBuilder(tasks)),
   });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SprintAnalyticsService,
-        { provide: getRepositoryToken(Project), useFactory: mockRepo },
-        { provide: getRepositoryToken(Task), useFactory: mockRepo },
-        { provide: getRepositoryToken(Sprint), useFactory: mockRepo },
+        { provide: getRepositoryToken(Task), useFactory: () => mockTaskRepo() },
+        { provide: getRepositoryToken(Sprint), useFactory: mockSprintRepo },
       ],
     }).compile();
 
@@ -62,16 +75,15 @@ describe('SprintAnalyticsService', () => {
     });
 
     it('should return sprint detail when sprint exists', async () => {
+      const tasks = [
+        { id: 't1', status: 'done', priority: 'high', story_points: 5, sprint_id: 's1', assignee_ids: ['u1'], assignee_id: 'u1', estimated_hours: 8, created_at: new Date() },
+        { id: 't2', status: 'todo', priority: 'low', story_points: 2, sprint_id: 's1', assignee_ids: null, assignee_id: null, estimated_hours: 4, created_at: new Date() },
+      ];
+
       const module = await Test.createTestingModule({
         providers: [
           SprintAnalyticsService,
-          { provide: getRepositoryToken(Project), useFactory: mockRepo },
-          { provide: getRepositoryToken(Task), useFactory: () => ({
-            find: jest.fn().mockResolvedValue([
-              { id: 't1', status: 'done', priority: 'high', story_points: 5, sprint_id: 's1', assignee_ids: ['u1'], assignee_id: 'u1', estimated_hours: 8, created_at: new Date() },
-              { id: 't2', status: 'todo', priority: 'low', story_points: 2, sprint_id: 's1', assignee_ids: null, assignee_id: null, estimated_hours: 4, created_at: new Date() },
-            ]),
-          }) },
+          { provide: getRepositoryToken(Task), useFactory: () => mockTaskRepo(tasks) },
           { provide: getRepositoryToken(Sprint), useFactory: () => ({
             find: jest.fn().mockResolvedValue([]),
             findOne: jest.fn().mockResolvedValue({
@@ -92,6 +104,7 @@ describe('SprintAnalyticsService', () => {
           expect.objectContaining({ status: 'todo', count: 1 }),
         ]),
       );
+      expect(result.estimated_total_hours).toBe(12);
     });
   });
 
@@ -103,16 +116,15 @@ describe('SprintAnalyticsService', () => {
     });
 
     it('should return burndown data for existing sprint', async () => {
+      const tasks = [
+        { id: 't1', story_points: 5, sprint_id: 's1', status: 'done' },
+        { id: 't2', story_points: 3, sprint_id: 's1', status: 'todo' },
+      ];
+
       const module = await Test.createTestingModule({
         providers: [
           SprintAnalyticsService,
-          { provide: getRepositoryToken(Project), useFactory: mockRepo },
-          { provide: getRepositoryToken(Task), useFactory: () => ({
-            find: jest.fn().mockResolvedValue([
-              { id: 't1', story_points: 5, sprint_id: 's1', status: 'done' },
-              { id: 't2', story_points: 3, sprint_id: 's1', status: 'todo' },
-            ]),
-          }) },
+          { provide: getRepositoryToken(Task), useFactory: () => mockTaskRepo(tasks) },
           { provide: getRepositoryToken(Sprint), useFactory: () => ({
             find: jest.fn().mockResolvedValue([]),
             findOne: jest.fn().mockResolvedValue({

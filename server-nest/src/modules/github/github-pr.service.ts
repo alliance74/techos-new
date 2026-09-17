@@ -1,10 +1,8 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { randomUUID } from 'crypto';
 import { GithubApiService } from './github-api.service';
 import { GithubInstallationService } from './github-installation.service';
-import { GithubRepository } from '../../entities/github-repository.entity';
 import { Task } from '../../entities/task.entity';
 
 export interface CreatePrDto {
@@ -38,8 +36,6 @@ export class GithubPrService {
   constructor(
     private githubApi: GithubApiService,
     private installationService: GithubInstallationService,
-    @InjectRepository(GithubRepository)
-    private repositoryEntity: Repository<GithubRepository>,
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
   ) {}
