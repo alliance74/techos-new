@@ -39,7 +39,8 @@ export class ContextualRetrievalService {
   ) {}
 
   /**
-   * Extract intent keywords from user message to determine what to retrieve
+   * Extract intent keywords from user message to determine what to retrieve.
+   * Order matters: more specific patterns are checked first to avoid overlap.
    */
   extractIntent(message: string): {
     domains: string[];
@@ -53,16 +54,32 @@ export class ContextualRetrievalService {
     let timeScope: 'today' | 'week' | 'month' | 'all' = 'all';
     let actionType = 'query';
 
-    // Domain detection
-    if (/project|sprint|backlog|board/.test(lower)) domains.push('projects');
-    if (/task|ticket|story|todo|assignment/.test(lower)) domains.push('tasks');
-    if (/bug|issue|defect|crash/.test(lower)) domains.push('bugs');
-    if (/team|member|people|staff|employee/.test(lower)) domains.push('team');
-    if (/review|pr|pull request|merge/.test(lower)) domains.push('code_reviews');
-    if (/sprint|iteration|velocity/.test(lower)) domains.push('sprints');
+    // Domain detection — check specific terms first to avoid overlap
+    // "sprint" alone → sprints; "sprint backlog/board" → projects+sprints
+    const hasSprintWord = /\bsprint(s)?\b|\biteration\b|\bvelocity\b/.test(lower);
+    const hasBacklogWord = /\bbacklog\b|\bboard\b/.test(lower);
 
-    // Entity extraction (IDs, names)
-    const idMatch = message.match(/\b([a-f0-9-]{36})\b/);
+    if (/\bproject(s)?\b|\broadmap\b|\bepic\b/.test(lower) || (hasSprintWord && hasBacklogWord)) {
+      domains.push('projects');
+    }
+    if (hasSprintWord) {
+      domains.push('sprints');
+    }
+    if (/\btask(s)?\b|\bticket(s)?\b|\bstory\b|\btodo\b|\bassignment\b/.test(lower)) {
+      domains.push('tasks');
+    }
+    if (/\bbug(s)?\b|\bissue(s)?\b|\bdefect(s)?\b|\bcrash(es)?\b/.test(lower)) {
+      domains.push('bugs');
+    }
+    if (/\bteam\b|\bmember(s)?\b|\bpeople\b|\bstaff\b|\bemployee(s)?\b/.test(lower)) {
+      domains.push('team');
+    }
+    if (/\breview(s)?\b|\bpr(s|s\b)?\b|\bpull request(s)?\b|\bmerge(d|s)?\b/.test(lower)) {
+      domains.push('code_reviews');
+    }
+
+    // Entity extraction (UUIDs, quoted names)
+    const idMatch = message.match(/\b([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/);
     if (idMatch) entities.push(idMatch[1]);
 
     const quotedEntities = message.match(/"([^"]+)"|'([^']+)'/g);
@@ -71,19 +88,19 @@ export class ContextualRetrievalService {
     }
 
     // Time scope
-    if (/today|now|current/.test(lower)) timeScope = 'today';
-    else if (/this week|current sprint|upcoming/.test(lower)) timeScope = 'week';
-    else if (/this month|monthly/.test(lower)) timeScope = 'month';
+    if (/\btoday\b|\bnow\b|\bcurrent\b/.test(lower)) timeScope = 'today';
+    else if (/\bthis week\b|\bcurrent sprint\b|\bupcoming\b/.test(lower)) timeScope = 'week';
+    else if (/\bthis month\b|\bmonthly\b/.test(lower)) timeScope = 'month';
 
     // Action type
-    if (/create|add|new|make/.test(lower)) actionType = 'create';
-    else if (/update|change|modify|edit/.test(lower)) actionType = 'update';
-    else if (/delete|remove|close/.test(lower)) actionType = 'delete';
-    else if (/assign|delegate|give/.test(lower)) actionType = 'assign';
-    else if (/analyze|report|summary|show/.test(lower)) actionType = 'analyze';
+    if (/\bcreate\b|\badd\b|\bnew\b|\bmake\b/.test(lower)) actionType = 'create';
+    else if (/\bupdate\b|\bchange\b|\bmodify\b|\bedit\b/.test(lower)) actionType = 'update';
+    else if (/\bdelete\b|\bremove\b|\bclose\b/.test(lower)) actionType = 'delete';
+    else if (/\bassign\b|\bdelegate\b|\bgive\b/.test(lower)) actionType = 'assign';
+    else if (/\banalyze\b|\breport\b|\bsummary\b|\bshow\b/.test(lower)) actionType = 'analyze';
 
     if (!domains.length) {
-      // Default: include everything but limit
+      // Default: include projects and tasks for general queries
       domains.push('projects', 'tasks');
     }
 
@@ -91,12 +108,13 @@ export class ContextualRetrievalService {
   }
 
   /**
-   * Perform contextual retrieval based on extracted intent
+   * Perform contextual retrieval based on extracted intent.
+   * Only queries the databases relevant to the detected domains.
    */
   async retrieveContext(org_id: string, message: string): Promise<RetrievalContext> {
     const intent = this.extractIntent(message);
     this.logger.log(
-      `Retrieval intent: domains=${intent.domains}, timeScope=${intent.timeScope}, action=${intent.actionType}`,
+      `Retrieval intent: domains=[${intent.domains}], timeScope=${intent.timeScope}, action=${intent.actionType}`,
     );
 
     const context: RetrievalContext = {
@@ -112,7 +130,7 @@ export class ContextualRetrievalService {
 
     const limit = 20;
 
-    // Retrieve only relevant domains
+    // Retrieve only relevant domains in parallel
     const queries: Promise<void>[] = [];
 
     if (intent.domains.includes('projects')) {
@@ -217,7 +235,7 @@ export class ContextualRetrievalService {
     if (context.bugs.length) {
       parts.push(`\n# BUGS (${context.statistics.bugs.total} total, ${context.statistics.bugs.open} open)`);
       context.bugs.slice(0, 10).forEach((b) => {
-        parts.push(`- "${(b as any).title}" [${b.status}] severity=${(b as any).severity}`);
+        parts.push(`- "${b.title}" [${b.status}] severity=${b.severity}`);
       });
     }
 
@@ -231,7 +249,7 @@ export class ContextualRetrievalService {
     if (context.codeReviews.length) {
       parts.push(`\n# CODE REVIEWS (${context.codeReviews.length})`);
       context.codeReviews.slice(0, 5).forEach((cr) => {
-        parts.push(`- "${(cr as any).title || 'Review'}" [${cr.status}] (ID: ${cr.id})`);
+        parts.push(`- "${cr.title}" [${cr.status}] (ID: ${cr.id})`);
       });
     }
 

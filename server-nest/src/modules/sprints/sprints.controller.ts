@@ -9,13 +9,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SprintsService } from './sprints.service';
 import { SprintAnalyticsService } from './sprint-analytics.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('sprints')
-@UseGuards(JwtAuthGuard)
+@UseGuards(ThrottlerGuard, JwtAuthGuard)
 export class SprintsController {
   constructor(
     private sprintsService: SprintsService,

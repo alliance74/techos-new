@@ -38,16 +38,15 @@ export class RecommendationEngineService {
   async generateRecommendations(org_id: string, user_role?: string): Promise<Recommendation[]> {
     const recommendations: Recommendation[] = [];
 
-    // Parallel data fetching
-    const [projects, tasks, sprints, bugs, users] = await Promise.all([
-      this.projectRepository.find({ where: { org_id } }),
-      this.taskRepository.find({ where: { org_id }, order: { created_at: 'DESC' } }),
-      this.sprintRepository.find({ where: { org_id }, order: { created_at: 'DESC' }, take: 5 }),
-      this.bugRepository.find({ where: { org_id } }),
-      this.userRepository.find({ where: { org_id } }),
+    // Parallel data fetching with sensible limits
+    const [projects, tasks, sprints, bugs] = await Promise.all([
+      this.projectRepository.find({ where: { org_id }, take: 100 }),
+      this.taskRepository.find({ where: { org_id }, order: { created_at: 'DESC' }, take: 200 }),
+      this.sprintRepository.find({ where: { org_id }, order: { created_at: 'DESC' }, take: 10 }),
+      this.bugRepository.find({ where: { org_id }, take: 100 }),
     ]);
 
-    // 1. Task priority recommendations
+    // 1. Task priority recommendations — overdue tasks
     const overdueTasks = tasks.filter((t) => {
       if (!t.due_date) return false;
       return new Date(t.due_date) < new Date() && t.status !== 'done';
@@ -151,29 +150,32 @@ export class RecommendationEngineService {
       }
     }
 
-    // 6. Velocity forecast
-    if (sprints.length >= 2) {
-      const completedSprints = sprints.filter((s) => s.status === 'completed');
-      if (completedSprints.length >= 2) {
-        const velocities = await Promise.all(
-          completedSprints.slice(0, 3).map(async (s) => {
-            const st = await this.taskRepository.find({ where: { sprint_id: s.id } });
-            return st.filter((t) => t.status === 'done').reduce((sum, t) => sum + (t.story_points || 1), 0);
-          }),
-        );
-        const avgVelocity = velocities.length
-          ? velocities.reduce((a, b) => a + b, 0) / velocities.length
-          : 0;
+    // 6. Velocity forecast — batch query instead of N+1
+    const completedSprints = sprints.filter((s) => s.status === 'completed');
+    if (completedSprints.length >= 2) {
+      const completedSprintIds = completedSprints.slice(0, 3).map((s) => s.id);
+      const sprintTasks = await this.taskRepository.find({
+        where: completedSprintIds.map((id) => ({ sprint_id: id })),
+      });
 
-        recommendations.push({
-          type: 'velocity_forecast',
-          title: `Average sprint velocity: ${avgVelocity.toFixed(1)} points`,
-          description: `Based on the last ${completedSprints.length} completed sprints, the team averages ${avgVelocity.toFixed(1)} story points per sprint.`,
-          confidence: 0.7,
-          priority: 'low',
-          action: 'Use this velocity for sprint planning',
-        });
-      }
+      const velocities = completedSprintIds.map((sid) =>
+        sprintTasks
+          .filter((t) => t.sprint_id === sid && t.status === 'done')
+          .reduce((sum, t) => sum + (t.story_points || 1), 0),
+      );
+
+      const avgVelocity = velocities.length
+        ? velocities.reduce((a, b) => a + b, 0) / velocities.length
+        : 0;
+
+      recommendations.push({
+        type: 'velocity_forecast',
+        title: `Average sprint velocity: ${avgVelocity.toFixed(1)} points`,
+        description: `Based on the last ${completedSprints.length} completed sprints, the team averages ${avgVelocity.toFixed(1)} story points per sprint.`,
+        confidence: 0.7,
+        priority: 'low',
+        action: 'Use this velocity for sprint planning',
+      });
     }
 
     // Sort by priority

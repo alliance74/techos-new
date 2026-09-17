@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { McpTool } from '../../entities/mcp-tool.entity';
 import { McpToolUsage } from '../../entities/mcp-tool-usage.entity';
@@ -111,7 +111,7 @@ export class McpRegistryService {
       where: {
         tool_id,
         user_id: dto.user_id || 'system',
-        period_start: periodStart,
+        period_start: Between(periodStart, periodEnd),
       },
     });
 

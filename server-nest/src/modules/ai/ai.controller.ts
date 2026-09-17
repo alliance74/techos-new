@@ -15,6 +15,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AiService } from './ai.service';
 import { AiConversationService } from './ai-conversation.service';
@@ -32,7 +33,7 @@ import { RecommendationEngineService } from './recommendation-engine.service';
 @ApiTags('AI Assistant')
 @ApiBearerAuth()
 @Controller('ai')
-@UseGuards(JwtAuthGuard)
+@UseGuards(ThrottlerGuard, JwtAuthGuard)
 export class AiController {
   constructor(
     private aiService: AiService,

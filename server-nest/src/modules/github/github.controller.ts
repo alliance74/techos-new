@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Query,
 } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { GithubApiService } from './github-api.service';
@@ -19,6 +20,7 @@ import { GithubWebhookService } from './github-webhook.service';
 import { GithubPrService } from './github-pr.service';
 
 @Controller('github')
+@UseGuards(ThrottlerGuard)
 export class GithubController {
   constructor(
     private githubApi: GithubApiService,
