@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { GithubInstallation } from '../../entities/github-installation.entity';
 import { GithubRepository } from '../../entities/github-repository.entity';
@@ -283,6 +283,3 @@ export class GithubInstallationService {
     return { success: true, data: events };
   }
 }
-
-// Import In for queries
-import { In } from 'typeorm';
