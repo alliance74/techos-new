@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiConversationService } from './ai-conversation.service';
+import { ContextualRetrievalService } from './contextual-retrieval.service';
+import { RecommendationEngineService } from './recommendation-engine.service';
 import { Project } from '../../entities/project.entity';
 import { Task } from '../../entities/task.entity';
 import { Bug } from '../../entities/bug.entity';
@@ -64,7 +66,17 @@ import { Message } from '../../entities/message.entity';
     ]),
   ],
   controllers: [AiController],
-  providers: [AiService, AiConversationService],
-  exports: [AiService, AiConversationService],
+  providers: [
+    AiService,
+    AiConversationService,
+    ContextualRetrievalService,
+    RecommendationEngineService,
+  ],
+  exports: [
+    AiService,
+    AiConversationService,
+    ContextualRetrievalService,
+    RecommendationEngineService,
+  ],
 })
 export class AiModule {}

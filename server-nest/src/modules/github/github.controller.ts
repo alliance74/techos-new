@@ -9,12 +9,14 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { GithubApiService } from './github-api.service';
 import { GithubInstallationService } from './github-installation.service';
 import { GithubWebhookService } from './github-webhook.service';
+import { GithubPrService } from './github-pr.service';
 
 @Controller('github')
 export class GithubController {
@@ -22,6 +24,7 @@ export class GithubController {
     private githubApi: GithubApiService,
     private installationService: GithubInstallationService,
     private webhookService: GithubWebhookService,
+    private prService: GithubPrService,
   ) {}
 
   /**
@@ -118,5 +121,60 @@ export class GithubController {
   @UseGuards(JwtAuthGuard)
   getEvents(@CurrentUser() user: any) {
     return this.installationService.getRecentEvents(user.org_id);
+  }
+
+  // --- Pull Request Workflow ---
+
+  @Post('pull-requests')
+  @UseGuards(JwtAuthGuard)
+  createPullRequest(@CurrentUser() user: any, @Body() body: any) {
+    return this.prService.createPullRequest(user.org_id, body, user);
+  }
+
+  @Get('pull-requests')
+  @UseGuards(JwtAuthGuard)
+  listPullRequests(
+    @CurrentUser() user: any,
+    @Query('repo') repositoryFullName: string,
+    @Query('state') state?: string,
+    @Query('page') page?: string,
+    @Query('per_page') perPage?: string,
+  ) {
+    return this.prService.listPullRequests(
+      user.org_id,
+      repositoryFullName,
+      state || 'open',
+      Number(page) || 1,
+      Number(perPage) || 30,
+    );
+  }
+
+  @Get('pull-requests/:repo/:number')
+  @UseGuards(JwtAuthGuard)
+  getPullRequest(
+    @CurrentUser() user: any,
+    @Param('repo') repo: string,
+    @Param('number') number: string,
+  ) {
+    // Decode the repo param (it may contain slashes like "owner/repo")
+    const repositoryFullName = decodeURIComponent(repo);
+    return this.prService.getPullRequest(user.org_id, repositoryFullName, Number(number));
+  }
+
+  @Post('pull-requests/:repo/:number/merge')
+  @UseGuards(JwtAuthGuard)
+  mergePullRequest(
+    @CurrentUser() user: any,
+    @Param('repo') repo: string,
+    @Param('number') number: string,
+    @Body() body: { merge_method?: 'merge' | 'squash' | 'rebase' },
+  ) {
+    const repositoryFullName = decodeURIComponent(repo);
+    return this.prService.mergePullRequest(
+      user.org_id,
+      repositoryFullName,
+      Number(number),
+      body.merge_method || 'squash',
+    );
   }
 }
