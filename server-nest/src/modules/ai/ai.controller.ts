@@ -26,6 +26,8 @@ import {
   SendMessageDto,
   UpdateMessageDto,
 } from './dto/conversation.dto';
+import { ContextualRetrievalService } from './contextual-retrieval.service';
+import { RecommendationEngineService } from './recommendation-engine.service';
 
 @ApiTags('AI Assistant')
 @ApiBearerAuth()
@@ -35,6 +37,8 @@ export class AiController {
   constructor(
     private aiService: AiService,
     private conversationService: AiConversationService,
+    private contextualRetrieval: ContextualRetrievalService,
+    private recommendationEngine: RecommendationEngineService,
   ) {}
 
   @Post('chat')
@@ -182,5 +186,35 @@ export class AiController {
     @Query('provider') provider?: 'openai' | 'claude' | 'gemini' | 'grok',
   ) {
     return this.aiService.suggestPriorities(user.org_id, provider);
+  }
+
+  // --- Contextual Retrieval ---
+
+  @Post('retrieve-context')
+  @ApiOperation({ summary: 'Retrieve contextual data based on query intent' })
+  retrieveContext(
+    @CurrentUser() user: any,
+    @Body() body: { message: string },
+  ) {
+    return this.contextualRetrieval.retrieveContext(user.org_id, body.message);
+  }
+
+  @Post('retrieve-context/prompt')
+  @ApiOperation({ summary: 'Get a focused context prompt for AI chat' })
+  async getContextPrompt(
+    @CurrentUser() user: any,
+    @Body() body: { message: string },
+  ) {
+    const context = await this.contextualRetrieval.retrieveContext(user.org_id, body.message);
+    const prompt = this.contextualRetrieval.buildContextPrompt(context);
+    return { success: true, data: { prompt, statistics: context.statistics } };
+  }
+
+  // --- Recommendations ---
+
+  @Get('recommendations')
+  @ApiOperation({ summary: 'Get AI-powered recommendations' })
+  getRecommendations(@CurrentUser() user: any) {
+    return this.recommendationEngine.generateRecommendations(user.org_id, user.role);
   }
 }

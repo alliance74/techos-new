@@ -41,6 +41,11 @@ import { AiMessage } from './ai-message.entity';
 import { AiUsage } from './ai-usage.entity';
 import { ProjectAudit } from './project-audit.entity';
 import { AuditTask } from './audit-task.entity';
+import { GithubInstallation } from './github-installation.entity';
+import { GithubRepository } from './github-repository.entity';
+import { GithubEvent } from './github-event.entity';
+import { McpTool } from './mcp-tool.entity';
+import { McpToolUsage } from './mcp-tool-usage.entity';
 
 export const entities = [
   Organization,
@@ -85,6 +90,11 @@ export const entities = [
   AiUsage,
   ProjectAudit,
   AuditTask,
+  GithubInstallation,
+  GithubRepository,
+  GithubEvent,
+  McpTool,
+  McpToolUsage,
 ];
 
 // Export individual entities
@@ -131,4 +141,9 @@ export {
   AiUsage,
   ProjectAudit,
   AuditTask,
+  GithubInstallation,
+  GithubRepository,
+  GithubEvent,
+  McpTool,
+  McpToolUsage,
 };

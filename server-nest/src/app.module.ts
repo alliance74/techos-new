@@ -35,6 +35,7 @@ import { CisoModule } from './modules/ciso/ciso.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { CodeReviewsModule } from './modules/code-reviews/code-reviews.module';
 import { GithubModule } from './modules/github/github.module';
+import { McpRegistryModule } from './modules/mcp-registry/mcp-registry.module';
 
 function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
   const dbType = (
@@ -135,6 +136,7 @@ function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
     WorkspaceModule,
     CodeReviewsModule,
     GithubModule,
+    McpRegistryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
