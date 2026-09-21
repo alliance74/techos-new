@@ -120,6 +120,7 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
           { name: 'Messages', href: '/ceo/messages', icon: MessageSquare },
           { name: 'Documents', href: '/ceo/documents', icon: FileText },
           { name: 'AI Assistant', href: '/ceo/ai', icon: Bot },
+          { name: 'GitHub Actions', href: '/ceo/github-actions', icon: GitBranch },
           { name: 'Settings', href: '/ceo/settings', icon: Settings },
         ],
       },
@@ -300,6 +301,7 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
         items: [
           { name: 'Documentation', href: '/software-engineer/documentation', icon: FileText },
           { name: 'AI Assistant', href: '/software-engineer/ai', icon: Bot },
+          { name: 'GitHub Actions', href: '/software-engineer/github-actions', icon: GitBranch },
         ],
       },
       {
