@@ -92,3 +92,69 @@
 
   color-scheme: light;
 }
+
+/* ===== Dark Mode ===== */
+.dark {
+  /* ——— Brand ——— */
+  --brand: #8bb4fe;
+  --brand-soft: #6a9cfd;
+  --brand-deep: #a8ccfe;
+  --brand-mist: #1a2744;
+  --brand-wash: #0f1a2e;
+  --brand-rgb: 139 180 254;
+
+  /* ——— Surfaces ——— */
+  --bg: #0f172a;
+  --bg-elevated: #1e293b;
+  --bg-muted: #1e293b;
+  --bg-subtle: #1a2744;
+  --bg-inverse: #f1f5f9;
+
+  --surface: #1e293b;
+  --surface-hover: #263348;
+  --surface-active: #1a2744;
+
+  /* ——— Borders ——— */
+  --border: #334155;
+  --border-strong: #475569;
+  --border-focus: #8bb4fe;
+
+  /* ——— Text ——— */
+  --text: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+  --text-link: #8bb4fe;
+
+  /* ——— Status ——— */
+  --success: #22c55e;
+  --success-soft: #052e16;
+  --success-text: #86efac;
+  --warning: #f59e0b;
+  --warning-soft: #422006;
+  --warning-text: #fcd34d;
+  --danger: #ef4444;
+  --danger-soft: #450a0a;
+  --danger-text: #fca5a5;
+  --info: #8bb4fe;
+  --info-soft: #1a2744;
+  --info-text: #93bbfd;
+
+  /* ——— Sidebar / chrome ——— */
+  --sidebar-bg: #1e293b;
+  --sidebar-border: #334155;
+  --sidebar-text: #94a3b8;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active: #8bb4fe;
+  --sidebar-hover: #263348;
+  --topbar-bg: #1e293b;
+  --topbar-border: #334155;
+
+  /* ——— Shadows ——— */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.2);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.2);
+  --shadow-auth: 0 25px 50px -12px rgb(0 0 0 / 0.4), 0 12px 24px -8px rgb(0 0 0 / 0.2);
+
+  color-scheme: dark;
+}

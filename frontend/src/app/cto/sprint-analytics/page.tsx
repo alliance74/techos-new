@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/UI/Card';
 import { Badge } from '@/components/UI/Badge';
 import { Progress } from '@/components/UI/Progress';
 import { LoadingSpinner } from '@/components/UI/LoadingSpinner';
+import { useTheme } from '@/hooks/useTheme';
 import {
   BarChart3,
   TrendingUp,
@@ -18,8 +19,9 @@ import {
   AlertCircle,
   Flame,
   CalendarDays,
-  ArrowUpRight,
-  ArrowDownRight,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 
 interface SprintSummary {
@@ -54,6 +56,16 @@ interface SprintDashboardData {
   };
 }
 
+interface UserData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar: string;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     active: 'bg-success/10 text-success border-success/20',
@@ -83,13 +95,68 @@ function MiniBarChart({ data, max }: { data: { label: string; value: number; col
   );
 }
 
+function ThemeToggle({ theme, resolved, toggleTheme, setTheme }: {
+  theme: string;
+  resolved: 'light' | 'dark';
+  toggleTheme: () => void;
+  setTheme: (t: 'light' | 'dark' | 'system') => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 bg-bg-muted border border-border rounded-lg p-1">
+      <button
+        onClick={() => setTheme('light')}
+        className={`p-1.5 rounded-md transition-colors ${resolved === 'light' ? 'bg-surface text-brand shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+        title="Light mode"
+      >
+        <Sun className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => setTheme('dark')}
+        className={`p-1.5 rounded-md transition-colors ${resolved === 'dark' ? 'bg-surface text-brand shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+        title="Dark mode"
+      >
+        <Moon className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => setTheme('system')}
+        className={`p-1.5 rounded-md transition-colors ${theme === 'system' ? 'bg-surface text-brand shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+        title="System preference"
+      >
+        <Monitor className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function UserAvatar({ name, avatar }: { name: string; avatar?: string }) {
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  if (avatar) {
+    return <img src={avatar} alt={name} className="h-8 w-8 rounded-full object-cover" />;
+  }
+
+  return (
+    <div className="h-8 w-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xs font-semibold">
+      {initials}
+    </div>
+  );
+}
+
 export default function SprintAnalyticsPage() {
   const [data, setData] = useState<SprintDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<Record<string, UserData>>({});
+  const { theme, resolved, toggleTheme, setTheme } = useTheme();
 
   useEffect(() => {
     fetchSprintAnalytics();
+    fetchUsers();
   }, []);
 
   const fetchSprintAnalytics = async () => {
@@ -107,6 +174,40 @@ export default function SprintAnalyticsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const res = await fetch('/api/users', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) return;
+      const result = await res.json();
+      const userList: UserData[] = result.data || result || [];
+      const userMap: Record<string, UserData> = {};
+      for (const u of userList) {
+        userMap[u.id] = u;
+      }
+      setUsers(userMap);
+    } catch {
+      // Non-critical — will fall back to UUID display
+    }
+  };
+
+  const getDisplayName = (userId: string, fallbackName?: string) => {
+    if (fallbackName && fallbackName !== userId) return fallbackName;
+    const user = users[userId];
+    if (!user) return userId.slice(0, 8);
+    if (user.first_name || user.last_name) {
+      return `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    }
+    return user.name || user.email || userId.slice(0, 8);
+  };
+
+  const getUserRole = (userId: string) => {
+    const user = users[userId];
+    return user?.role || '';
   };
 
   if (loading) {
@@ -144,12 +245,15 @@ export default function SprintAnalyticsPage() {
           <h1 className="text-3xl font-bold text-ink">Sprint Analytics</h1>
           <p className="text-ink-muted mt-2">Velocity tracking, burndown charts, and team performance</p>
         </div>
-        <button
-          onClick={fetchSprintAnalytics}
-          className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-ink hover:bg-bg-muted transition-colors"
-        >
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle theme={theme} resolved={resolved} toggleTheme={toggleTheme} setTheme={setTheme} />
+          <button
+            onClick={fetchSprintAnalytics}
+            className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-ink hover:bg-bg-muted transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Overview Cards */}
@@ -360,6 +464,7 @@ export default function SprintAnalyticsPage() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-4 text-ink-muted font-medium">Member</th>
+                  <th className="text-left py-3 px-4 text-ink-muted font-medium">Role</th>
                   <th className="text-center py-3 px-4 text-ink-muted font-medium">Assigned</th>
                   <th className="text-center py-3 px-4 text-ink-muted font-medium">Completed</th>
                   <th className="text-center py-3 px-4 text-ink-muted font-medium">Story Points</th>
@@ -367,26 +472,38 @@ export default function SprintAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {team_performance.map((member) => (
-                  <tr key={member.user_id} className="border-b border-border/50 hover:bg-bg-muted/50">
-                    <td className="py-3 px-4">
-                      <span className="font-medium text-ink">{member.user_name || member.user_id.slice(0, 8)}</span>
-                    </td>
-                    <td className="text-center py-3 px-4 text-ink-secondary">{member.tasks_assigned}</td>
-                    <td className="text-center py-3 px-4">
-                      <span className="font-medium text-success">{member.tasks_completed}</span>
-                    </td>
-                    <td className="text-center py-3 px-4">
-                      <span className="font-semibold text-brand">{member.story_points_completed}</span>
-                    </td>
-                    <td className="text-center py-3 px-4">
-                      <div className="flex items-center gap-2 justify-center">
-                        <Progress value={member.completion_rate} className="w-16 h-1.5" />
-                        <span className="text-ink-secondary">{member.completion_rate.toFixed(0)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {team_performance.map((member) => {
+                  const displayName = getDisplayName(member.user_id, member.user_name);
+                  const role = getUserRole(member.user_id);
+                  return (
+                    <tr key={member.user_id} className="border-b border-border/50 hover:bg-bg-muted/50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar name={displayName} />
+                          <div>
+                            <span className="font-medium text-ink">{displayName}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-xs text-ink-muted capitalize">{role.replace(/_/g, ' ')}</span>
+                      </td>
+                      <td className="text-center py-3 px-4 text-ink-secondary">{member.tasks_assigned}</td>
+                      <td className="text-center py-3 px-4">
+                        <span className="font-medium text-success">{member.tasks_completed}</span>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <span className="font-semibold text-brand">{member.story_points_completed}</span>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <div className="flex items-center gap-2 justify-center">
+                          <Progress value={member.completion_rate} className="w-16 h-1.5" />
+                          <span className="text-ink-secondary">{member.completion_rate.toFixed(0)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

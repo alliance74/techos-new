@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { Toaster } from 'react-hot-toast';
 
@@ -15,6 +15,19 @@ export function Providers({ children }: { children: ReactNode }) {
     },
   }));
 
+  // Sync dark mode class on mount and when localStorage changes
+  useEffect(() => {
+    const apply = () => {
+      const stored = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+      const mode = stored || 'system';
+      const isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', isDark);
+    };
+    apply();
+    window.addEventListener('storage', apply);
+    return () => window.removeEventListener('storage', apply);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <SocketProvider>
@@ -24,16 +37,16 @@ export function Providers({ children }: { children: ReactNode }) {
           toastOptions={{
             duration: 4000,
             style: {
-              background: '#ffffff',
-              color: '#1f2937',
-              border: '1px solid #e5e7eb',
-              boxShadow: '0 10px 30px rgba(91, 141, 239, 0.12)',
+              background: 'var(--surface)',
+              color: 'var(--text)',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow-lg)',
             },
             success: {
-              iconTheme: { primary: '#6A9CFD', secondary: '#fff' },
+              iconTheme: { primary: 'var(--brand)', secondary: 'var(--surface)' },
             },
             error: {
-              iconTheme: { primary: '#ef4444', secondary: '#fff' },
+              iconTheme: { primary: 'var(--danger)', secondary: 'var(--surface)' },
             },
           }}
         />
