@@ -36,6 +36,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { CodeReviewsModule } from './modules/code-reviews/code-reviews.module';
 import { GithubModule } from './modules/github/github.module';
 import { McpRegistryModule } from './modules/mcp-registry/mcp-registry.module';
+import { FigmaModule } from './modules/figma/figma.module';
 
 function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
   const dbType = (
@@ -137,6 +138,7 @@ function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions {
     CodeReviewsModule,
     GithubModule,
     McpRegistryModule,
+    FigmaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

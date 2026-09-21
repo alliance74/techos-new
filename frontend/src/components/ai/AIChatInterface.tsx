@@ -19,6 +19,7 @@ import { Input } from '@/components/UI/Input';
 import { Card } from '@/components/UI/Card';
 import { Modal } from '@/components/UI/Modal';
 import { Progress } from '@/components/UI/Progress';
+import { FigmaContextPanel } from '@/components/figma/FigmaContextPanel';
 import { 
   Plus, 
   MessageSquare, 
@@ -31,6 +32,7 @@ import {
   Check,
   X,
   AlertCircle,
+  Palette,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,6 +44,8 @@ export function AIChatInterface() {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'conversation' | 'message'; id: string } | null>(null);
+  const [showFigmaPanel, setShowFigmaPanel] = useState(false);
+  const [figmaContext, setFigmaContext] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversationsData } = useAIConversations();
@@ -84,7 +88,16 @@ export function AIChatInterface() {
   const handleSendMessage = async () => {
     if (!message.trim() || !selectedConversationId) return;
 
-    const messageText = message;
+    let messageText = message;
+    
+    // Prepend Figma context if available
+    if (figmaContext) {
+      messageText = `${figmaContext}\n\n---\n\n${message}`;
+      // Clear context after sending
+      setFigmaContext(null);
+      setShowFigmaPanel(false);
+    }
+
     setMessage('');
 
     await sendMessage.mutateAsync({
@@ -116,6 +129,11 @@ export function AIChatInterface() {
     if (selectedConversationId === conversationId) {
       setSelectedConversationId(null);
     }
+  };
+
+  const handleFigmaContextReady = (context: string) => {
+    setFigmaContext(context);
+    toast.success('Figma context loaded! Your next message will include design context.');
   };
 
   const formatMessage = (text: string) => {
@@ -218,115 +236,151 @@ export function AIChatInterface() {
                   {currentConversation?.messageCount} messages · {currentConversation?.tokensUsed} tokens
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDeleteConfirm({ type: 'conversation', id: selectedConversationId })}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={showFigmaPanel ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setShowFigmaPanel(!showFigmaPanel)}
+                  title="Toggle Figma context panel"
+                >
+                  <Palette className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm({ type: 'conversation', id: selectedConversationId })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'items-start'}`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="h-8 w-8 rounded-full bg-brand text-ink-inverse flex items-center justify-center shrink-0 mt-1">
-                      <Bot className="h-4 w-4" />
-                    </div>
-                  )}
-
-                  <div className="flex-1 max-w-[85%]">
-                    {editingMessageId === msg.id ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={editingContent}
-                          onChange={(e) => setEditingContent(e.target.value)}
-                          placeholder="Edit message..."
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={handleEditMessage}>
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingMessageId(null);
-                              setEditingContent('');
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className={`rounded-2xl px-4 py-3 text-sm ${
-                          msg.role === 'user'
-                            ? 'bg-brand text-ink-inverse ml-auto whitespace-pre-wrap'
-                            : 'bg-bg-muted border border-border text-ink'
-                        }`}
-                      >
-                        {msg.role === 'user' ? (
-                          <div className="flex items-start justify-between gap-2">
-                            <span>{msg.content}</span>
-                            <div className="flex gap-1 shrink-0">
-                              <button
-                                onClick={() => {
-                                  setEditingMessageId(msg.id!);
-                                  setEditingContent(msg.content);
-                                }}
-                                className="p-1 hover:bg-white/20 rounded"
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={() => setShowDeleteConfirm({ type: 'message', id: msg.id! })}
-                                className="p-1 hover:bg-white/20 rounded"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            className="prose prose-sm max-w-none prose-headings:text-ink prose-p:text-ink prose-strong:text-ink prose-li:text-ink"
-                            dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
-                          />
-                        )}
-                        {msg.edited && (
-                          <div className="text-xs opacity-70 mt-1">(edited)</div>
-                        )}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Messages */}
+              <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${showFigmaPanel ? 'border-r border-border' : ''}`}>
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'items-start'}`}
+                  >
+                    {msg.role === 'assistant' && (
+                      <div className="h-8 w-8 rounded-full bg-brand text-ink-inverse flex items-center justify-center shrink-0 mt-1">
+                        <Bot className="h-4 w-4" />
                       </div>
                     )}
+
+                    <div className="flex-1 max-w-[85%]">
+                      {editingMessageId === msg.id ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={editingContent}
+                            onChange={(e) => setEditingContent(e.target.value)}
+                            placeholder="Edit message..."
+                            className="w-full"
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={handleEditMessage}>
+                              <Check className="h-3 w-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingMessageId(null);
+                                setEditingContent('');
+                              }}
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={`rounded-2xl px-4 py-3 text-sm ${
+                            msg.role === 'user'
+                              ? 'bg-brand text-ink-inverse whitespace-pre-wrap'
+                              : 'bg-bg-muted border border-border text-ink'
+                          }`}
+                        >
+                          {msg.role === 'user' ? (
+                            msg.content
+                          ) : (
+                            <div
+                              className="prose prose-sm max-w-none prose-headings:text-ink prose-p:text-ink prose-strong:text-ink prose-li:text-ink"
+                              dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      {msg.role === 'user' && msg.id && editingMessageId !== msg.id && (
+                        <div className="flex gap-1 mt-1 justify-end">
+                          <button
+                            onClick={() => {
+                              setEditingMessageId(msg.id!);
+                              setEditingContent(msg.content);
+                            }}
+                            className="p-1 text-ink-muted hover:text-ink rounded"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => msg.id && setShowDeleteConfirm({ type: 'message', id: msg.id })}
+                            className="p-1 text-ink-muted hover:text-danger rounded"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Figma Context Panel */}
+              {showFigmaPanel && (
+                <div className="w-80 overflow-y-auto p-4">
+                  <FigmaContextPanel onContextReady={handleFigmaContextReady} />
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
+              )}
             </div>
 
-            {/* Input */}
+            {/* Message Input */}
             <div className="p-4 border-t border-border">
+              {figmaContext && (
+                <div className="mb-2 p-2 bg-brand/10 border border-brand/20 rounded-lg flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-brand" />
+                  <span className="text-xs text-brand font-medium">Figma context will be included</span>
+                  <button
+                    onClick={() => setFigmaContext(null)}
+                    className="ml-auto text-brand hover:text-brand/80"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
               <form
-                className="flex gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendMessage();
                 }}
+                className="flex gap-2"
               >
                 <Input
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type your message..."
+                  placeholder={figmaContext ? "Ask about the Figma design..." : "Type your message..."}
                   className="flex-1"
                   disabled={sendMessage.isPending}
                 />
-                <Button type="submit" loading={sendMessage.isPending} disabled={!message.trim()}>
+                <Button
+                  type="submit"
+                  disabled={!message.trim() || sendMessage.isPending}
+                  loading={sendMessage.isPending}
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </form>
@@ -343,37 +397,37 @@ export function AIChatInterface() {
       >
         <div className="space-y-4">
           <Input
+            label="Conversation Title"
             value={newConversationTitle}
             onChange={(e) => setNewConversationTitle(e.target.value)}
-            placeholder="Enter conversation title..."
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleCreateConversation();
-              }
-            }}
+            placeholder="e.g., Design review, Feature discussion..."
+            autoFocus
           />
-          <div className="flex gap-2 justify-end">
+          <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setShowNewConversation(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateConversation} loading={createConversation.isPending}>
+            <Button
+              onClick={handleCreateConversation}
+              loading={createConversation.isPending}
+            >
               Create
             </Button>
           </div>
         </div>
       </Modal>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={!!showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(null)}
-        title={`Delete ${showDeleteConfirm?.type === 'conversation' ? 'Conversation' : 'Message'}?`}
+        title={`Delete ${showDeleteConfirm?.type === 'conversation' ? 'Conversation' : 'Message'}`}
       >
         <div className="space-y-4">
-          <p className="text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Are you sure you want to delete this {showDeleteConfirm?.type}? This action cannot be undone.
           </p>
-          <div className="flex gap-2 justify-end">
+          <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setShowDeleteConfirm(null)}>
               Cancel
             </Button>

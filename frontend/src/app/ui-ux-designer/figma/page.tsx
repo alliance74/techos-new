@@ -117,6 +117,7 @@ export default function FigmaIntegrationPage() {
       <Tabs defaultValue="mcp">
         <TabList aria-label="Figma integration sections">
           <Tab value="mcp">MCP Server</Tab>
+          <Tab value="api">API Endpoints</Tab>
           <Tab value="workflows">Workflows</Tab>
           <Tab value="ai">AI Assistant</Tab>
         </TabList>
@@ -194,6 +195,67 @@ export default function FigmaIntegrationPage() {
                     </a>
                   </div>
                 ))}
+              </div>
+            </Card>
+          </div>
+        </TabPanel>
+
+        <TabPanel value="api">
+          <div className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Code2 className="h-5 w-5 text-brand" />
+                <h3 className="text-lg font-semibold text-ink">Figma API Endpoints</h3>
+              </div>
+              <p className="text-sm text-ink-muted mb-4">
+                Backend API endpoints for Figma integration. All endpoints require JWT authentication.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { method: 'GET', path: '/api/figma/status', desc: 'Check Figma configuration status' },
+                  { method: 'GET', path: '/api/figma/file/:fileKey', desc: 'Get Figma file details' },
+                  { method: 'GET', path: '/api/figma/file/:fileKey/tokens', desc: 'Extract design tokens (colors, typography, spacing)' },
+                  { method: 'GET', path: '/api/figma/file/:fileKey/components', desc: 'Get components from Figma file' },
+                  { method: 'GET', path: '/api/figma/file/:fileKey/images', desc: 'Export images from Figma nodes' },
+                  { method: 'POST', path: '/api/figma/webhooks', desc: 'Figma webhook endpoint for real-time updates' },
+                  { method: 'POST', path: '/api/figma/context', desc: 'Get Figma context for AI assistant' },
+                ].map((endpoint) => (
+                  <div key={endpoint.path} className="flex items-start gap-3 p-3 bg-bg-muted rounded-lg">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                      endpoint.method === 'GET' ? 'bg-success/20 text-success' : 'bg-brand/20 text-brand'
+                    }`}>
+                      {endpoint.method}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-mono text-ink">{endpoint.path}</p>
+                      <p className="text-xs text-ink-muted mt-0.5">{endpoint.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold text-ink mb-4">Design Token Extraction</h3>
+              <p className="text-sm text-ink-muted mb-4">
+                Extract design tokens from Figma files and generate CSS variables or Tailwind config.
+              </p>
+              <div className="bg-bg-muted rounded-lg p-4 font-mono text-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-ink-muted">Example: Extract CSS tokens</span>
+                </div>
+                <pre className="text-ink overflow-x-auto">
+{`GET /api/figma/file/ABC123/tokens?format=css
+
+Response:
+{
+  "success": true,
+  "data": {
+    "tokens": { ... },
+    "css": ":root { --primary: #6366f1; ... }"
+  }
+}`}
+                </pre>
               </div>
             </Card>
           </div>
