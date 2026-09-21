@@ -339,6 +339,7 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
           { name: 'Prototypes', href: '/ui-ux-designer/prototypes', icon: Layers },
           { name: 'Design System', href: '/ui-ux-designer/design-system', icon: Palette },
           { name: 'User Research', href: '/ui-ux-designer/user-research', icon: Users },
+          { name: 'Figma Integration', href: '/ui-ux-designer/figma', icon: Palette },
         ],
       },
       {
