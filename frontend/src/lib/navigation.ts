@@ -18,6 +18,7 @@ import {
   ListTodo,
   CheckSquare,
   GitPullRequest,
+  GitBranch,
   Boxes,
   Server,
   FileBarChart,
@@ -157,6 +158,7 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
           { name: 'Documentation', href: '/cto/documentation', icon: FileText },
           { name: 'Infrastructure', href: '/cto/infrastructure', icon: Server },
           { name: 'Observability', href: '/cto/observability', icon: Activity },
+          { name: 'GitHub Actions', href: '/cto/github-actions', icon: GitBranch },
         ],
       },
       {
@@ -203,6 +205,7 @@ export const ROLE_NAV: Record<string, RoleNavConfig> = {
           { name: 'Audit Tasks', href: '/ciso/tasks', icon: CheckSquare },
           { name: 'Project Audits', href: '/ciso/projects', icon: ShieldCheck },
           { name: 'Security Reports', href: '/ciso/reports', icon: FileBarChart },
+          { name: 'GitHub Actions', href: '/ciso/github-actions', icon: GitBranch },
         ],
       },
       {
