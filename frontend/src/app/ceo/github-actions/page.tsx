@@ -1,6 +1,8 @@
 'use client';
 
 import { GitHubActionsCapabilities } from '@/components/GitHubActionsCapabilities';
+import { GitHubEventFeed } from '@/components/github/GitHubEventFeed';
+import { GitHubWorkflowTrigger } from '@/components/github/GitHubWorkflowTrigger';
 import { GitBranch, Webhook, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Card } from '@/components/UI/Card';
 
@@ -37,11 +39,17 @@ export default function CeoGitHubActionsPage() {
               <code className="mx-1 px-1.5 py-0.5 bg-bg-muted rounded text-xs">GITHUB_APP_ID</code>,
               <code className="mx-1 px-1.5 py-0.5 bg-bg-muted rounded text-xs">GITHUB_PRIVATE_KEY</code>,
               <code className="mx-1 px-1.5 py-0.5 bg-bg-muted rounded text-xs">GITHUB_WEBHOOK_SECRET</code>.
-              Once configured, install the GitHub App on your organization's repositories.
+              Once configured, install the GitHub App on your organization&apos;s repositories.
             </p>
           </div>
         </div>
       </Card>
+
+      {/* Live event feed and workflow trigger */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <GitHubEventFeed maxEvents={15} compact />
+        <GitHubWorkflowTrigger />
+      </div>
 
       {/* Capabilities */}
       <GitHubActionsCapabilities role="ceo" />

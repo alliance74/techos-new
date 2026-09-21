@@ -997,10 +997,39 @@ function SettingsView({ breadcrumbs }: { breadcrumbs: { label: string; href?: st
   const [confirmPassword, setConfirmPassword] = useState('');
   const [orgName, setOrgName] = useState('');
 
+  // Theme state
+  const [storedTheme, setStoredTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+
   useEffect(() => {
     setFirstName(user?.firstName || '');
     setLastName(user?.lastName || '');
   }, [user?.firstName, user?.lastName]);
+
+  useEffect(() => {
+    const stored = (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system';
+    setStoredTheme(stored);
+    const resolved = stored === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : stored;
+    setResolvedTheme(resolved);
+  }, []);
+
+  const applyTheme = (newTheme: 'light' | 'dark' | 'system') => {
+    setStoredTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    const resolved = newTheme === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : newTheme;
+    setResolvedTheme(resolved);
+    document.documentElement.classList.toggle('dark', resolved === 'dark');
+  };
+
+  const themeOptions = [
+    { value: 'light' as const, label: 'Light', icon: '☀️', description: 'Always use light mode' },
+    { value: 'dark' as const, label: 'Dark', icon: '🌙', description: 'Always use dark mode' },
+    { value: 'system' as const, label: 'System', icon: '🖥️', description: 'Follow your device setting' },
+  ];
 
   return (
     <div>
@@ -1008,9 +1037,41 @@ function SettingsView({ breadcrumbs }: { breadcrumbs: { label: string; href?: st
       <Tabs defaultValue="profile">
         <TabList aria-label="Settings sections">
           <Tab value="profile">Profile</Tab>
+          <Tab value="theme">Theme</Tab>
           <Tab value="security">Security</Tab>
           {isCeo ? <Tab value="organization">Organization</Tab> : null}
         </TabList>
+        <TabPanel value="theme">
+          <Card className="max-w-xl">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-medium text-ink mb-1">Appearance</h3>
+                <p className="text-xs text-ink-muted">Choose your preferred theme for the interface.</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {themeOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => applyTheme(opt.value)}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                      storedTheme === opt.value
+                        ? 'border-brand bg-brand/5 shadow-sm'
+                        : 'border-border hover:border-brand/30 hover:bg-bg-muted'
+                    }`}
+                  >
+                    <span className="text-2xl">{opt.icon}</span>
+                    <span className="text-sm font-medium text-ink">{opt.label}</span>
+                    <span className="text-[11px] text-ink-muted text-center leading-tight">{opt.description}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-bg-muted rounded-lg">
+                <span className="text-xs text-ink-muted">Current theme:</span>
+                <span className="text-xs font-medium text-ink capitalize">{storedTheme === 'system' ? `System (${resolvedTheme})` : storedTheme}</span>
+              </div>
+            </div>
+          </Card>
+        </TabPanel>
         <TabPanel value="profile">
           <Card className="max-w-xl space-y-4">
             <Input label="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />

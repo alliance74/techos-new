@@ -1,6 +1,8 @@
 'use client';
 
 import { GitHubActionsCapabilities } from '@/components/GitHubActionsCapabilities';
+import { GitHubEventFeed } from '@/components/github/GitHubEventFeed';
+import { GitHubWorkflowTrigger } from '@/components/github/GitHubWorkflowTrigger';
 import { Code, GitPullRequest, Zap } from 'lucide-react';
 import { Card } from '@/components/UI/Card';
 
@@ -54,6 +56,12 @@ export default function SoftwareEngineerGitHubActionsPage() {
             </div>
           </div>
         </Card>
+      </div>
+
+      {/* Live event feed and workflow trigger */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <GitHubEventFeed maxEvents={15} compact />
+        <GitHubWorkflowTrigger />
       </div>
 
       {/* Capabilities */}

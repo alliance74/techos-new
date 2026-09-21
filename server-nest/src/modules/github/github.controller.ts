@@ -18,6 +18,7 @@ import { GithubApiService } from './github-api.service';
 import { GithubInstallationService } from './github-installation.service';
 import { GithubWebhookService } from './github-webhook.service';
 import { GithubPrService } from './github-pr.service';
+import { GithubWorkflowService } from './github-workflow.service';
 
 @Controller('github')
 @UseGuards(ThrottlerGuard)
@@ -27,6 +28,7 @@ export class GithubController {
     private installationService: GithubInstallationService,
     private webhookService: GithubWebhookService,
     private prService: GithubPrService,
+    private workflowService: GithubWorkflowService,
   ) {}
 
   /**
@@ -177,6 +179,76 @@ export class GithubController {
       repositoryFullName,
       Number(number),
       body.merge_method || 'squash',
+    );
+  }
+
+  // --- GitHub Actions Workflows ---
+
+  @Get('workflows')
+  @UseGuards(JwtAuthGuard)
+  listWorkflows(
+    @CurrentUser() user: any,
+    @Query('repo') repositoryFullName: string,
+    @Query('page') page?: string,
+    @Query('per_page') perPage?: string,
+  ) {
+    return this.workflowService.listWorkflows(
+      user.org_id,
+      repositoryFullName,
+      Number(page) || 1,
+      Number(perPage) || 30,
+    );
+  }
+
+  @Post('workflows/trigger')
+  @UseGuards(JwtAuthGuard)
+  triggerWorkflow(@CurrentUser() user: any, @Body() body: any) {
+    return this.workflowService.triggerWorkflow(user.org_id, body, user);
+  }
+
+  @Get('workflows/runs')
+  @UseGuards(JwtAuthGuard)
+  listWorkflowRuns(
+    @CurrentUser() user: any,
+    @Query('repo') repositoryFullName: string,
+    @Query('workflow') workflowId?: string,
+    @Query('page') page?: string,
+    @Query('per_page') perPage?: string,
+  ) {
+    return this.workflowService.listWorkflowRuns(
+      user.org_id,
+      repositoryFullName,
+      workflowId,
+      Number(page) || 1,
+      Number(perPage) || 30,
+    );
+  }
+
+  @Get('workflows/runs/:runId')
+  @UseGuards(JwtAuthGuard)
+  getWorkflowRun(
+    @CurrentUser() user: any,
+    @Param('runId') runId: string,
+    @Query('repo') repositoryFullName: string,
+  ) {
+    return this.workflowService.getWorkflowRun(
+      user.org_id,
+      repositoryFullName,
+      Number(runId),
+    );
+  }
+
+  @Post('workflows/runs/:runId/cancel')
+  @UseGuards(JwtAuthGuard)
+  cancelWorkflowRun(
+    @CurrentUser() user: any,
+    @Param('runId') runId: string,
+    @Body() body: { repo: string },
+  ) {
+    return this.workflowService.cancelWorkflowRun(
+      user.org_id,
+      body.repo,
+      Number(runId),
     );
   }
 }
