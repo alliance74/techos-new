@@ -48,10 +48,10 @@ export class GithubInstallation {
   @CreateDateColumn()
   created_at: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   updated_at: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   suspended_at: Date;
 
   @ManyToOne(() => Organization, (org) => org.id)

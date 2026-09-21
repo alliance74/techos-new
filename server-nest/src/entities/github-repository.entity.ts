@@ -52,7 +52,7 @@ export class GithubRepository {
   @CreateDateColumn()
   created_at: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   updated_at: Date;
 
   @ManyToOne(() => GithubInstallation, (inst) => inst.repositories)

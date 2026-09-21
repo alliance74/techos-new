@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:4000';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:4001';
 
 /** Realtime on by default in development; set NEXT_PUBLIC_ENABLE_WS=false to disable. */
 export const isRealtimeEnabled = () => {

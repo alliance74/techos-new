@@ -53,3 +53,8 @@ graphify-out/
 .codegraph/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+
+# Tool artifacts
+.claude/
+.playwright/
+freebuff-chat-*.md
