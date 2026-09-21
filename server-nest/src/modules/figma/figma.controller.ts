@@ -157,6 +157,38 @@ export class FigmaController {
   }
 
   /**
+   * GET /figma/webhooks/events - Get stored webhook events
+   */
+  @Get('webhooks/events')
+  @UseGuards(JwtAuthGuard)
+  async getWebhookEvents(
+    @CurrentUser() user: any,
+    @Query('limit') limit?: string,
+  ) {
+    const events = await this.figmaService.getWebhookEvents(
+      user.org_id,
+      Number(limit) || 50,
+    );
+    return { success: true, data: events };
+  }
+
+  /**
+   * GET /figma/webhooks/events/:id - Get webhook event by ID
+   */
+  @Get('webhooks/events/:id')
+  @UseGuards(JwtAuthGuard)
+  async getWebhookEventById(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ) {
+    const event = await this.figmaService.getWebhookEventById(id);
+    if (!event) {
+      return { success: false, message: 'Event not found' };
+    }
+    return { success: true, data: event };
+  }
+
+  /**
    * POST /figma/context - Get Figma context for AI assistant
    */
   @Post('context')

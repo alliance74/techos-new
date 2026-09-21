@@ -46,6 +46,7 @@ import { GithubRepository } from './github-repository.entity';
 import { GithubEvent } from './github-event.entity';
 import { McpTool } from './mcp-tool.entity';
 import { McpToolUsage } from './mcp-tool-usage.entity';
+import { FigmaWebhookEvent } from './figma-webhook-event.entity';
 
 export const entities = [
   Organization,
@@ -95,6 +96,7 @@ export const entities = [
   GithubEvent,
   McpTool,
   McpToolUsage,
+  FigmaWebhookEvent,
 ];
 
 // Export individual entities
@@ -146,4 +148,5 @@ export {
   GithubEvent,
   McpTool,
   McpToolUsage,
+  FigmaWebhookEvent,
 };

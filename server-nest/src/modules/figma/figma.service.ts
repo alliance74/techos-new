@@ -1,6 +1,9 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as crypto from 'crypto';
+import { FigmaWebhookEvent } from '../../entities/figma-webhook-event.entity';
 
 export interface FigmaDesignTokens {
   colors: DesignToken[];
@@ -47,7 +50,11 @@ export class FigmaService {
   private apiToken: string | null = null;
   private webhookSecret: string | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(FigmaWebhookEvent)
+    private webhookEventRepository: Repository<FigmaWebhookEvent>,
+  ) {
     this.apiToken = this.configService.get<string>('FIGMA_API_KEY') || null;
     this.webhookSecret = this.configService.get<string>('FIGMA_WEBHOOK_SECRET') || null;
   }
@@ -295,18 +302,37 @@ export class FigmaService {
   async processWebhookEvent(event: any): Promise<{ success: boolean; message: string }> {
     this.logger.log(`Processing Figma webhook event: ${event.event_type}`);
 
+    // Store the event
+    const webhookEvent = this.webhookEventRepository.create({
+      org_id: event.org_id || 'system',
+      event_type: event.event_type,
+      file_key: event.file_key,
+      file_name: event.file_name,
+      timestamp: event.timestamp,
+      payload: JSON.stringify(event),
+      triggered_by: event.triggered_by,
+      status: 'received',
+      changes_summary: this.buildChangesSummary(event),
+      metadata: JSON.stringify({
+        passcode: event.passcode,
+        origin: event.origin,
+        trigger: event.trigger,
+      }),
+    });
+    await this.webhookEventRepository.save(webhookEvent);
+
     switch (event.event_type) {
       case 'FILE_UPDATE':
-        await this.handleFileUpdate(event);
+        await this.handleFileUpdate(event, webhookEvent.id);
         break;
       case 'FILE_VERSION_UPDATE':
-        await this.handleFileVersionUpdate(event);
+        await this.handleFileVersionUpdate(event, webhookEvent.id);
         break;
       case 'FILE_DELETE':
-        await this.handleFileDelete(event);
+        await this.handleFileDelete(event, webhookEvent.id);
         break;
       case 'LIBRARY_PUBLISH':
-        await this.handleLibraryPublish(event);
+        await this.handleLibraryPublish(event, webhookEvent.id);
         break;
       default:
         this.logger.log(`Unhandled Figma event type: ${event.event_type}`);
@@ -315,24 +341,63 @@ export class FigmaService {
     return { success: true, message: `Processed ${event.event_type}` };
   }
 
-  private async handleFileUpdate(event: any): Promise<void> {
+  private buildChangesSummary(event: any): string {
+    switch (event.event_type) {
+      case 'FILE_UPDATE':
+        return `File ${event.file_name || event.file_key} was updated`;
+      case 'FILE_VERSION_UPDATE':
+        return `New version created for ${event.file_name || event.file_key}`;
+      case 'FILE_DELETE':
+        return `File ${event.file_name || event.file_key} was deleted`;
+      case 'LIBRARY_PUBLISH':
+        return `Library published from ${event.file_name || event.file_key}`;
+      default:
+        return `${event.event_type} event received`;
+    }
+  }
+
+  private async handleFileUpdate(event: any, webhookEventId: string): Promise<void> {
     this.logger.log(`File updated: ${event.file_key}`);
-    // In production, trigger design token sync, notify designers, etc.
+    await this.updateEventStatus(webhookEventId, 'processed', 'File update processed');
   }
 
-  private async handleFileVersionUpdate(event: any): Promise<void> {
+  private async handleFileVersionUpdate(event: any, webhookEventId: string): Promise<void> {
     this.logger.log(`File version updated: ${event.file_key}`);
-    // In production, create snapshot, update version history
+    await this.updateEventStatus(webhookEventId, 'processed', 'Version update processed');
   }
 
-  private async handleFileDelete(event: any): Promise<void> {
+  private async handleFileDelete(event: any, webhookEventId: string): Promise<void> {
     this.logger.log(`File deleted: ${event.file_key}`);
-    // In production, cleanup cached data, notify team
+    await this.updateEventStatus(webhookEventId, 'processed', 'File deletion processed');
   }
 
-  private async handleLibraryPublish(event: any): Promise<void> {
+  private async handleLibraryPublish(event: any, webhookEventId: string): Promise<void> {
     this.logger.log(`Library published: ${event.file_key}`);
-    // In production, sync design system, update component library
+    await this.updateEventStatus(webhookEventId, 'processed', 'Library publish processed');
+  }
+
+  private async updateEventStatus(id: string, status: string, summary?: string): Promise<void> {
+    const update: any = { status };
+    if (summary) update.changes_summary = summary;
+    await this.webhookEventRepository.update(id, update);
+  }
+
+  /**
+   * Get stored webhook events
+   */
+  async getWebhookEvents(orgId: string, limit = 50): Promise<FigmaWebhookEvent[]> {
+    return this.webhookEventRepository.find({
+      where: { org_id: orgId },
+      order: { created_at: 'DESC' },
+      take: limit,
+    });
+  }
+
+  /**
+   * Get webhook event by ID
+   */
+  async getWebhookEventById(id: string): Promise<FigmaWebhookEvent | null> {
+    return this.webhookEventRepository.findOne({ where: { id } });
   }
 
   /**
