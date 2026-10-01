@@ -12,9 +12,14 @@ async function bootstrap() {
     'http://localhost:3000',
     'https://techos-new-1urb-kappa.vercel.app',
     'https://techos.blinktechnologiz.com',
+    'https://techos.blinktechnologies.net',
+    'https://www.techos.blinktechnologies.net',
   ];
   if (process.env.CORS_ORIGIN) {
     allowedOrigins.push(...process.env.CORS_ORIGIN.split(','));
+  }
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(...process.env.FRONTEND_URL.split(','));
   }
   app.enableCors({
     origin: allowedOrigins,
