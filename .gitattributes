@@ -1,0 +1,10 @@
+# Normalize line endings: text files are stored with LF in the index and
+# checked out as LF on every platform. Without this, an editor on Windows
+# silently rewrites the whole tree to CRLF and every file shows as modified.
+* text=auto eol=lf
+
+# Windows batch scripts only run correctly with CRLF line endings.
+*.bat text eol=crlf
+
+# Binary assets must never be passed through the text filters.
+*.ico binary
